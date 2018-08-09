@@ -144,7 +144,7 @@
       "eslint --fix",
       "git add"
     ],
-    "*.{json,md}": [
+    "*.{json,md,yml,yaml}": [
       "prettier --write",
       "git add"
     ],
@@ -167,7 +167,7 @@
     "fix:scripts": "yarn test:scripts --fix",
     "postinstall": "grunt init",
     "precommit": "lint-staged",
-    "prettier": "prettier --ignore-path .gitignore \"**/*.{json,md}\"",
+    "prettier": "prettier --ignore-path .gitignore \"**/*.{json,md,yml,yaml}\"",
     "start": "concurrently \"yarn start:dev\" \"grunt\"",
     "start:dev": "webpack-dev-server --config webpack.config.dev.js --open",
     "stylelint": "prettier --ignore-path .gitignore --write \"**/*.less\" && stylelint --fix --ignore-path .gitignore \"**/*.less\"",

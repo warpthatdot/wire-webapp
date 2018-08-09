@@ -4,12 +4,12 @@ daysUntilStale: 365
 daysUntilClose: false
 exemptLabels:
   - security
-  - "type: Bug"
+  - 'type: Bug'
 staleLabel: wontfix
 markComment: >
-  This issue has been automatically marked as stale because it has not had
-  recent activity. It will be closed if no further activity occurs. Thank you
-  for your contributions.
+  This issue has been automatically marked as stale because it has not had recent activity. It will be closed if no further activity occurs. Thank you for your contributions.
+  
+
 unmarkComment: false
 closeComment: false
 only: issues
