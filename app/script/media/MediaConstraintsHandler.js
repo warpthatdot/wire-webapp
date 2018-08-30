@@ -128,9 +128,7 @@ z.media.MediaConstraintsHandler = class MediaConstraintsHandler {
       streamConstraints.video.mandatory = Object.assign(streamConstraints.video.mandatory, {chromeMediaSourceId});
 
       return Promise.resolve(streamConstraints);
-    }
-
-    if (z.util.Environment.browser.firefox) {
+    } else if (z.util.Environment.browser.firefox) {
       this.logger.info('Enabling screen sharing from Firefox');
 
       const streamConstraints = {
@@ -141,7 +139,12 @@ z.media.MediaConstraintsHandler = class MediaConstraintsHandler {
       return Promise.resolve(streamConstraints);
     }
 
-    return Promise.reject(new z.media.MediaError(z.media.MediaError.TYPE.SCREEN_NOT_SUPPORTED));
+    return Promise.resolve({
+      audio: false,
+      video: MediaConstraintsHandler.CONFIG.SCREEN_CONSTRAINTS.CHROME,
+    });
+
+    // return Promise.reject(new z.media.MediaError(z.media.MediaError.TYPE.SCREEN_NOT_SUPPORTED));
   }
 
   /**

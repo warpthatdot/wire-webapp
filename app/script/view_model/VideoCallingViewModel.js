@@ -131,7 +131,7 @@ z.viewModel.VideoCallingViewModel = class VideoCallingViewModel {
     this.showToggleVideo = ko.pureComputed(() => {
       return this.joinedCall() ? this.joinedCall().conversationEntity.supportsVideoCall(false) : false;
     });
-    this.disableToggleScreen = ko.pureComputed(() => !z.calling.CallingRepository.supportsScreenSharing);
+    this.disableToggleScreen = ko.pureComputed(() => false);
 
     this.visibleCallId = undefined;
     this.joinedCall.subscribe(callEntity => {
@@ -192,7 +192,7 @@ z.viewModel.VideoCallingViewModel = class VideoCallingViewModel {
 
   chooseSharedScreen(conversationId) {
     if (!this.disableToggleScreen()) {
-      const skipScreenSelection = this.selfStreamState.screenSend() || z.util.Environment.browser.firefox;
+      const skipScreenSelection = true;
       if (skipScreenSelection) {
         amplify.publish(z.event.WebApp.CALL.MEDIA.TOGGLE, conversationId, z.media.MediaType.SCREEN);
         return;
