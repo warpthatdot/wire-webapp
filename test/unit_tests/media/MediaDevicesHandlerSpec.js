@@ -22,53 +22,57 @@
 // grunt test_init && grunt test_run:media/MediaDevicesHandler
 
 describe('z.media.MediaDevicesHandler', () => {
-  const test_factory = new TestFactory();
+  let mediaDevicesHandler;
+
   const screens = [{id: 'screen1', name: 'Screen 1'}, {id: 'screen2', name: 'Screen 2'}];
   const cameras = [{deviceId: 'camera1', label: 'Camera 1'}, {deviceId: 'camera2', label: 'Camera 2'}];
-  let devicesHandler;
 
-  beforeAll(() => test_factory.exposeMediaActors());
+  beforeAll(() => {
+    return new TestFactory().exposeMediaActors().then(({repository}) => {
+      const mediaRepository = repository.media;
+      mediaDevicesHandler = mediaRepository.devicesHandler;
+    });
+  });
 
   beforeEach(() => {
-    devicesHandler = TestFactory.media_repository.devicesHandler;
-    spyOn(devicesHandler, 'getScreenSources').and.callFake(() => {
-      devicesHandler.availableDevices.screenInput(screens);
+    spyOn(mediaDevicesHandler, 'getScreenSources').and.callFake(() => {
+      mediaDevicesHandler.availableDevices.screenInput(screens);
       return Promise.resolve();
     });
-    spyOn(devicesHandler, 'getMediaDevices').and.callFake(() => {
-      devicesHandler.availableDevices.videoInput(cameras);
+    spyOn(mediaDevicesHandler, 'getMediaDevices').and.callFake(() => {
+      mediaDevicesHandler.availableDevices.videoInput(cameras);
       return Promise.resolve();
     });
   });
 
   describe('toggleNextScreen', () => {
     it('returns second screen if the first is currently selected', () => {
-      devicesHandler.currentDeviceId.screenInput(screens[0].id);
-      devicesHandler.currentDeviceIndex.screenInput(0);
-      devicesHandler.toggleNextScreen().then(() => {
-        expect(devicesHandler.currentDeviceId.screenInput()).toEqual(screens[1].id);
+      mediaDevicesHandler.currentDeviceId.screenInput(screens[0].id);
+      mediaDevicesHandler.currentDeviceIndex.screenInput(0);
+      mediaDevicesHandler.toggleNextScreen().then(() => {
+        expect(mediaDevicesHandler.currentDeviceId.screenInput()).toEqual(screens[1].id);
       });
     });
     it('returns first screen if the second is currently selected', () => {
-      devicesHandler.currentDeviceId.screenInput(screens[1].id);
-      devicesHandler.currentDeviceIndex.screenInput(1);
-      devicesHandler.toggleNextScreen().then(() => {
-        expect(devicesHandler.currentDeviceId.screenInput()).toEqual(screens[0].id);
+      mediaDevicesHandler.currentDeviceId.screenInput(screens[1].id);
+      mediaDevicesHandler.currentDeviceIndex.screenInput(1);
+      mediaDevicesHandler.toggleNextScreen().then(() => {
+        expect(mediaDevicesHandler.currentDeviceId.screenInput()).toEqual(screens[0].id);
       });
     });
   });
 
   describe('toggleNextCamera', () => {
     it('returns second camera if the first is currently selected', () => {
-      devicesHandler.currentDeviceId.videoInput(cameras[0].deviceId);
-      devicesHandler.toggleNextCamera().then(() => {
-        expect(devicesHandler.currentDeviceId.videoInput()).toEqual(cameras[1].deviceId);
+      mediaDevicesHandler.currentDeviceId.videoInput(cameras[0].deviceId);
+      mediaDevicesHandler.toggleNextCamera().then(() => {
+        expect(mediaDevicesHandler.currentDeviceId.videoInput()).toEqual(cameras[1].deviceId);
       });
     });
     it('returns first camera if the second is currently selected', () => {
-      devicesHandler.currentDeviceId.videoInput(cameras[1].deviceId);
-      devicesHandler.toggleNextCamera().then(() => {
-        expect(devicesHandler.currentDeviceId.videoInput()).toEqual(cameras[0].deviceId);
+      mediaDevicesHandler.currentDeviceId.videoInput(cameras[1].deviceId);
+      mediaDevicesHandler.toggleNextCamera().then(() => {
+        expect(mediaDevicesHandler.currentDeviceId.videoInput()).toEqual(cameras[0].deviceId);
       });
     });
   });

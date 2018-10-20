@@ -26,18 +26,21 @@ window.wire.auth = wire.auth || {};
 window.wire.auth.audio = wire.auth.audio || {};
 
 describe('z.media.MediaStreamHandler', () => {
-  const test_factory = new TestFactory();
+  let mediaStreamHandler;
 
-  beforeAll(() => test_factory.exposeMediaActors());
+  beforeAll(() => {
+    return new TestFactory().exposeMediaActors().then(({repository}) => {
+      const mediaRepository = repository.media;
+      mediaStreamHandler = mediaRepository.streamHandler;
+    });
+  });
 
   describe('addRemoteMediaStream', () => {
     it('throws an error if stream type is not recognized', () => {
-      const streamHandler = TestFactory.media_repository.streamHandler;
-
       const newMediaStream = {getType: () => 'random'};
 
       try {
-        streamHandler.addRemoteMediaStream(newMediaStream);
+        mediaStreamHandler.addRemoteMediaStream(newMediaStream);
       } catch (error) {
         expect(error instanceof z.error.MediaError).toBe(true);
         expect(error.type).toEqual(z.error.MediaError.TYPE.UNHANDLED_MEDIA_TYPE);
@@ -45,8 +48,6 @@ describe('z.media.MediaStreamHandler', () => {
     });
 
     it('should add the stream if type is recognized', () => {
-      const streamHandler = TestFactory.media_repository.streamHandler;
-
       const recognizedStreams = [
         {getType: () => z.media.MediaType.AUDIO},
         {getType: () => z.media.MediaType.VIDEO},
@@ -59,20 +60,18 @@ describe('z.media.MediaStreamHandler', () => {
         [recognizedStreams[0], recognizedStreams[1], recognizedStreams[2]],
       ];
 
-      const subscription = streamHandler.remoteMediaStreamInfo.subscribe(streams => {
+      const subscription = mediaStreamHandler.remoteMediaStreamInfo.subscribe(streams => {
         expect(streams).toEqual(expectedStreams.shift());
       });
 
-      recognizedStreams.forEach(stream => streamHandler.addRemoteMediaStream(stream));
+      recognizedStreams.forEach(stream => mediaStreamHandler.addRemoteMediaStream(stream));
       subscription.dispose();
-      streamHandler.remoteMediaStreamInfo([]);
+      mediaStreamHandler.remoteMediaStreamInfo([]);
     });
   });
 
   describe('remoteMediaStreamInfoIndex', () => {
     it('returns the media streams indexed by type', () => {
-      const streamHandler = TestFactory.media_repository.streamHandler;
-
       const audioStream = {getType: () => z.media.MediaType.AUDIO};
       const videoStream = {getType: () => z.media.MediaType.VIDEO};
       const audioVideoStream = {getType: () => z.media.MediaType.AUDIO_VIDEO};
@@ -81,7 +80,7 @@ describe('z.media.MediaStreamHandler', () => {
 
       const expectedVideoStreams = [[], [videoStream], [videoStream, audioVideoStream]];
 
-      const {audio: audioObservable, video: videoObservable} = streamHandler.remoteMediaStreamInfoIndex;
+      const {audio: audioObservable, video: videoObservable} = mediaStreamHandler.remoteMediaStreamInfoIndex;
       const subscriptions = [
         audioObservable.subscribe(audioStreams => {
           expect(audioStreams).toEqual(expectedAudioStreams.shift());
@@ -93,7 +92,7 @@ describe('z.media.MediaStreamHandler', () => {
       ];
 
       [audioStream, videoStream, audioVideoStream].forEach(stream => {
-        streamHandler.addRemoteMediaStream(stream);
+        mediaStreamHandler.addRemoteMediaStream(stream);
       });
 
       subscriptions.forEach(subscription => subscription.dispose());
@@ -101,10 +100,7 @@ describe('z.media.MediaStreamHandler', () => {
   });
 
   describe('toggleAudioSend', () => {
-    let mediaStreamHandler;
-
     beforeEach(() => {
-      mediaStreamHandler = TestFactory.media_repository.streamHandler;
       spyOn(mediaStreamHandler, '_toggleAudioSend').and.returnValue(Promise.resolve());
     });
 
@@ -126,10 +122,7 @@ describe('z.media.MediaStreamHandler', () => {
   });
 
   describe('toggleVideoSend', () => {
-    let mediaStreamHandler;
-
     beforeEach(() => {
-      mediaStreamHandler = TestFactory.media_repository.streamHandler;
       spyOn(mediaStreamHandler, '_toggleVideoSend').and.returnValue(Promise.resolve());
       spyOn(mediaStreamHandler, 'replaceInputSource').and.returnValue(Promise.resolve());
     });
@@ -148,7 +141,7 @@ describe('z.media.MediaStreamHandler', () => {
       mediaStreamHandler.localMediaStream(undefined);
       mediaStreamHandler.localMediaType(z.media.MediaType.VIDEO);
 
-      return TestFactory.media_repository.streamHandler.toggleVideoSend().then(() => {
+      return mediaStreamHandler.toggleVideoSend().then(() => {
         expect(mediaStreamHandler._toggleVideoSend).not.toHaveBeenCalled();
         expect(mediaStreamHandler.replaceInputSource).toHaveBeenCalledWith(z.media.MediaType.VIDEO);
       });
@@ -166,10 +159,7 @@ describe('z.media.MediaStreamHandler', () => {
   });
 
   describe('toggleScreenSend', () => {
-    let mediaStreamHandler;
-
     beforeEach(() => {
-      mediaStreamHandler = TestFactory.media_repository.streamHandler;
       spyOn(mediaStreamHandler, '_toggleScreenSend').and.returnValue(Promise.resolve());
       spyOn(mediaStreamHandler, 'replaceInputSource').and.returnValue(Promise.resolve());
     });
