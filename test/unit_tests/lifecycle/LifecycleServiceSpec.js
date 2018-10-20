@@ -22,23 +22,24 @@
 'use strict';
 
 describe('z.lifecycle.LifecycleService', () => {
-  let mock_response = undefined;
-  const test_factory = new window.TestFactory();
+  let lifecycleService;
+
+  const mockResponse = (body, status_code = 200, status_text) => {
+    const response = new window.Response(JSON.stringify(body), {
+      headers: {
+        'Content-type': 'application/json',
+      },
+      status: status_code,
+      statusText: status_text,
+    });
+
+    return Promise.resolve(response);
+  };
 
   beforeAll(() => {
-    mock_response = (body, status_code = 200, status_text) => {
-      const response = new window.Response(JSON.stringify(body), {
-        headers: {
-          'Content-type': 'application/json',
-        },
-        status: status_code,
-        statusText: status_text,
-      });
-
-      return Promise.resolve(response);
-    };
-
-    return test_factory.exposeLifecycleActors();
+    return new TestFactory().exposeLifecycleActors().then(({service}) => {
+      lifecycleService = service.lifecycle;
+    });
   });
 
   beforeEach(() => {
@@ -51,11 +52,11 @@ describe('z.lifecycle.LifecycleService', () => {
 
   describe('getVersion', () => {
     it('fetches the webapp release version', () => {
-      const response_body = {version: '2017-03-14-15-05-prod'};
-      window.fetch.returns(mock_response(response_body, 200));
+      const responseBody = {version: '2017-03-14-15-05-prod'};
+      window.fetch.returns(mockResponse(responseBody, 200));
 
-      return TestFactory.lifecycle_service.getVersion().then(version => {
-        expect(version).toBe(response_body.version);
+      return lifecycleService.getVersion().then(version => {
+        expect(version).toBe(responseBody.version);
       });
     });
   });
