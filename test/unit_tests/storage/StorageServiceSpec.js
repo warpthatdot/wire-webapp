@@ -21,16 +21,18 @@
 
 // grunt test_init && grunt test_run:storage/StorageService
 
-describe('z.storage.StorageRepository', () => {
-  const test_factory = new TestFactory();
+describe('z.storage.StorageService', () => {
+  let storageService;
 
-  beforeAll(() => test_factory.exposeStorageActors());
-
-  beforeEach(() => TestFactory.storage_repository.clearStores());
+  beforeAll(() => {
+    return new TestFactory().exposeStorageActors().then(({service}) => {
+      storageService = service.storage;
+    });
+  });
 
   describe('save', () => {
     it('does not save "null" values', done => {
-      TestFactory.storage_service
+      storageService
         .save(z.storage.StorageSchemata.OBJECT_STORE.AMPLIFY, 'primary_key', null)
         .then(done.fail)
         .catch(error => {
