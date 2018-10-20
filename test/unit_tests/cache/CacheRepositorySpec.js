@@ -22,12 +22,18 @@
 'use strict';
 
 describe('z.cache.CacheRepository', () => {
-  const cache_repository = new z.cache.CacheRepository();
+  let cacheRepository;
   const TEMP_KEY = 'should_be_deleted';
+
+  beforeAll(() => {
+    return new TestFactory().exposeCacheActors().then(({repository}) => {
+      cacheRepository = repository.cache;
+    });
+  });
 
   describe('clearCache', () => {
     beforeEach(() => {
-      cache_repository.clearCache();
+      cacheRepository.clearCache();
 
       const conversationInputKey = `${z.storage.StorageKey.CONVERSATION.INPUT}|${z.util.createRandomUuid()}`;
       amplify.store(conversationInputKey, {mentions: [], text: 'test'});
@@ -36,13 +42,13 @@ describe('z.cache.CacheRepository', () => {
     });
 
     it('deletes cached keys', () => {
-      const deleted_keys = cache_repository.clearCache(false);
+      const deleted_keys = cacheRepository.clearCache(false);
 
       expect(deleted_keys.length).toBe(2);
     });
 
     it('preserves cached conversation inputs while deleting other keys', () => {
-      const deleted_keys = cache_repository.clearCache(true);
+      const deleted_keys = cacheRepository.clearCache(true);
 
       expect(deleted_keys.length).toBe(1);
       expect(deleted_keys[0]).toBe(TEMP_KEY);
