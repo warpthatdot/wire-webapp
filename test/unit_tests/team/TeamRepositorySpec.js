@@ -22,7 +22,8 @@
 'use strict';
 
 describe('z.team.TeamRepository', () => {
-  const test_factory = new TestFactory();
+  let teamRepository;
+  let connectionSettings;
 
   /* eslint sort-keys: "off" */
   const teams_data = {
@@ -55,21 +56,25 @@ describe('z.team.TeamRepository', () => {
   /* eslint sort-keys: "off" */
 
   let server = undefined;
-  let team_repository = undefined;
 
-  beforeAll(() => test_factory.exposeTeamActors().then(repository => (team_repository = repository)));
+  beforeAll(() => {
+    return new TestFactory().exposeTeamActors().then(({repository, settings}) => {
+      connectionSettings = settings.connection;
+      teamRepository = repository.team;
+    });
+  });
 
   beforeEach(() => {
     server = sinon.fakeServer.create();
     server.autoRespond = true;
 
-    server.respondWith('GET', `${test_factory.settings.connection.restUrl}/teams?size=100`, [
+    server.respondWith('GET', `${connectionSettings.restUrl}/teams?size=100`, [
       200,
       {'Content-Type': 'application/json'},
       JSON.stringify(teams_data),
     ]);
 
-    server.respondWith('GET', `${test_factory.settings.connection.restUrl}/teams/${team_metadata.id}/members`, [
+    server.respondWith('GET', `${connectionSettings.restUrl}/teams/${team_metadata.id}/members`, [
       200,
       {'Content-Type': 'application/json'},
       JSON.stringify(team_members),
@@ -80,7 +85,7 @@ describe('z.team.TeamRepository', () => {
 
   describe('getTeam()', () => {
     it('returns the binding team entity', () => {
-      return team_repository.getTeam().then(team_et => {
+      return teamRepository.getTeam().then(team_et => {
         const [team_data] = teams_data.teams;
 
         expect(team_et.creator).toEqual(team_data.creator);
@@ -91,7 +96,7 @@ describe('z.team.TeamRepository', () => {
 
   describe('getTeamMembers()', () => {
     it('returns team member entities', () => {
-      return team_repository.getTeamMembers(team_metadata.id).then(entities => {
+      return teamRepository.getTeamMembers(team_metadata.id).then(entities => {
         expect(entities.length).toEqual(team_members.members.length);
         expect(entities[0].userId).toEqual(team_members.members[0].user);
         expect(entities[0].permissions).toEqual(team_members.members[0].permissions);
