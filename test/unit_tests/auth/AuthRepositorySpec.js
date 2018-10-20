@@ -22,13 +22,17 @@
 'use strict';
 
 describe('z.auth.AuthRepository', () => {
-  const test_factory = new TestFactory();
+  let authRepository;
 
-  beforeAll(() => test_factory.exposeAuthActors());
+  beforeAll(() => {
+    return new TestFactory().exposeAuthActors().then(({repository}) => {
+      authRepository = repository.auth;
+    });
+  });
 
   describe('_scheduleTokenRefresh', () => {
     beforeEach(() => {
-      spyOn(TestFactory.auth_repository, 'renewAccessToken');
+      spyOn(authRepository, 'renewAccessToken');
       jasmine.clock().install();
     });
 
@@ -38,26 +42,26 @@ describe('z.auth.AuthRepository', () => {
 
     it('renews the access token immediately if expiring in the past', () => {
       const expiration_timestamp = Date.now() - 30000;
-      TestFactory.auth_repository._scheduleTokenRefresh(expiration_timestamp);
+      authRepository._scheduleTokenRefresh(expiration_timestamp);
 
-      expect(TestFactory.auth_repository.renewAccessToken).toHaveBeenCalled();
+      expect(authRepository.renewAccessToken).toHaveBeenCalled();
     });
 
     it('renews the access token immediately if expiring within the next minute', () => {
       const expiration_timestamp = Date.now() + 30000;
-      TestFactory.auth_repository._scheduleTokenRefresh(expiration_timestamp);
+      authRepository._scheduleTokenRefresh(expiration_timestamp);
 
-      expect(TestFactory.auth_repository.renewAccessToken).toHaveBeenCalled();
+      expect(authRepository.renewAccessToken).toHaveBeenCalled();
     });
 
     it('renews the access token at the scheduled time', () => {
       const expiration_timestamp = Date.now() + 60500;
-      TestFactory.auth_repository._scheduleTokenRefresh(expiration_timestamp);
+      authRepository._scheduleTokenRefresh(expiration_timestamp);
 
-      expect(TestFactory.auth_repository.renewAccessToken).not.toHaveBeenCalled();
+      expect(authRepository.renewAccessToken).not.toHaveBeenCalled();
       jasmine.clock().tick(1000);
 
-      expect(TestFactory.auth_repository.renewAccessToken).toHaveBeenCalled();
+      expect(authRepository.renewAccessToken).toHaveBeenCalled();
     });
 
     it('clears an existing timeout before scheduling an new refresh', () => {
@@ -65,19 +69,19 @@ describe('z.auth.AuthRepository', () => {
       const first_timestamp = Date.now() + 60500;
       const second_timestamp = Date.now() + 61000;
 
-      TestFactory.auth_repository._scheduleTokenRefresh(first_timestamp);
+      authRepository._scheduleTokenRefresh(first_timestamp);
 
-      expect(TestFactory.auth_repository.renewAccessToken).not.toHaveBeenCalled();
+      expect(authRepository.renewAccessToken).not.toHaveBeenCalled();
       jasmine.clock().tick(250);
 
-      expect(TestFactory.auth_repository.renewAccessToken).not.toHaveBeenCalled();
-      TestFactory.auth_repository._scheduleTokenRefresh(second_timestamp);
+      expect(authRepository.renewAccessToken).not.toHaveBeenCalled();
+      authRepository._scheduleTokenRefresh(second_timestamp);
 
-      expect(TestFactory.auth_repository.renewAccessToken).not.toHaveBeenCalled();
+      expect(authRepository.renewAccessToken).not.toHaveBeenCalled();
       expect(window.clearTimeout).toHaveBeenCalled();
       jasmine.clock().tick(1000);
 
-      expect(TestFactory.auth_repository.renewAccessToken).toHaveBeenCalled();
+      expect(authRepository.renewAccessToken).toHaveBeenCalled();
     });
   });
 });
