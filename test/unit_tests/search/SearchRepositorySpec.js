@@ -22,10 +22,12 @@
 'use strict';
 
 describe('z.search.SearchRepository', () => {
-  const test_factory = new TestFactory();
+  let searchRepository;
 
   beforeAll(() => {
-    return test_factory.exposeSearchActors();
+    return new TestFactory().exposeSearchActors().then(({repository}) => {
+      searchRepository = repository.search;
+    });
   });
 
   describe('searchUserInSet', () => {
@@ -99,7 +101,7 @@ describe('z.search.SearchRepository', () => {
 
     tests.forEach(({expected, term, testCase}) => {
       it(`${testCase} term: ${term}`, () => {
-        const suggestions = TestFactory.search_repository.searchUserInSet(term, users);
+        const suggestions = searchRepository.searchUserInSet(term, users);
 
         expect(suggestions.map(serializeUser)).toEqual(expected.map(serializeUser));
       });
@@ -108,7 +110,7 @@ describe('z.search.SearchRepository', () => {
     it('does not replace numbers with emojis', () => {
       const felix10 = generateUser('simple10', 'Felix10');
       const unsortedUsers = [felix10];
-      const suggestions = TestFactory.search_repository.searchUserInSet('😋', unsortedUsers);
+      const suggestions = searchRepository.searchUserInSet('😋', unsortedUsers);
 
       expect(suggestions.map(serializeUser)).toEqual([]);
     });
@@ -120,11 +122,11 @@ describe('z.search.SearchRepository', () => {
 
       const unsortedUsers = [atFelix, smilyFelix, simplyFelix];
 
-      let suggestions = TestFactory.search_repository.searchUserInSet('felix', unsortedUsers);
+      let suggestions = searchRepository.searchUserInSet('felix', unsortedUsers);
       let expected = [simplyFelix, smilyFelix, atFelix];
 
       expect(suggestions.map(serializeUser)).toEqual(expected.map(serializeUser));
-      suggestions = TestFactory.search_repository.searchUserInSet('😋', unsortedUsers);
+      suggestions = searchRepository.searchUserInSet('😋', unsortedUsers);
       expected = [smilyFelix];
 
       expect(suggestions.map(serializeUser)).toEqual(expected.map(serializeUser));
@@ -141,7 +143,7 @@ describe('z.search.SearchRepository', () => {
       const unsortedUsers = [sixth, fifth, third, second, first, fourth];
       const expectedUsers = [first, second, third, fourth, fifth, sixth];
 
-      const suggestions = TestFactory.search_repository.searchUserInSet('_', unsortedUsers);
+      const suggestions = searchRepository.searchUserInSet('_', unsortedUsers);
 
       expect(suggestions.map(serializeUser)).toEqual(expectedUsers.map(serializeUser));
     });

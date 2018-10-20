@@ -439,7 +439,7 @@ class TestFactory {
       return Promise.resolve(this);
     }
 
-    return Promise.exposeUserActors().then(() => {
+    return this.exposeUserActors().then(() => {
       this.service.search = new z.search.SearchService(this.backendClient);
       this.repository.search = new z.search.SearchRepository(this.service.search, this.repository.user);
 
