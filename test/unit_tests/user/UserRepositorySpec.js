@@ -22,10 +22,17 @@
 'use strict';
 
 describe('z.user.UserRepository', () => {
-  let server = null;
-  const test_factory = new TestFactory();
+  let userRepository;
+  let connectionSettings;
 
-  beforeAll(() => test_factory.exposeUserActors());
+  let server = null;
+
+  beforeAll(() => {
+    return new TestFactory().exposeUserActors().then(({repository, settings}) => {
+      userRepository = repository.user;
+      connectionSettings = settings.connection;
+    });
+  });
 
   beforeEach(() => {
     server = sinon.fakeServer.create();
@@ -33,18 +40,18 @@ describe('z.user.UserRepository', () => {
   });
 
   afterEach(() => {
-    TestFactory.user_repository.users.removeAll();
+    userRepository.users.removeAll();
     server.restore();
   });
 
   describe('users', () => {
     describe('fetchUserById', () => {
       it('should handle malformed input', () => {
-        return TestFactory.user_repository
+        return userRepository
           .fetchUsersById()
           .then(response => {
             expect(response.length).toBe(0);
-            return TestFactory.user_repository.fetchUsersById([undefined, undefined, undefined]);
+            return userRepository.fetchUsersById([undefined, undefined, undefined]);
           })
           .then(response => {
             expect(response.length).toBe(0);
@@ -57,21 +64,21 @@ describe('z.user.UserRepository', () => {
 
       beforeEach(() => {
         user = new z.entity.User(entities.user.john_doe.id);
-        return TestFactory.user_repository.save_user(user);
+        return userRepository.save_user(user);
       });
 
       afterEach(() => {
-        TestFactory.user_repository.users.removeAll();
+        userRepository.users.removeAll();
       });
 
       it('should find an existing user', () => {
-        return TestFactory.user_repository.findUserById(user.id).then(user_et => {
+        return userRepository.findUserById(user.id).then(user_et => {
           expect(user_et).toEqual(user);
         });
       });
 
       it('should not find an unknown user', done => {
-        TestFactory.user_repository
+        userRepository
           .findUserById('1')
           .then(done.fail)
           .catch(error => {
@@ -82,15 +89,15 @@ describe('z.user.UserRepository', () => {
     });
 
     describe('save_user', () => {
-      afterEach(() => TestFactory.user_repository.users.removeAll());
+      afterEach(() => userRepository.users.removeAll());
 
       it('saves a user', () => {
         const user = new z.entity.User();
         user.id = entities.user.jane_roe.id;
 
-        return TestFactory.user_repository.save_user(user).then(() => {
-          expect(TestFactory.user_repository.users().length).toBe(1);
-          expect(TestFactory.user_repository.users()[0]).toBe(user);
+        return userRepository.save_user(user).then(() => {
+          expect(userRepository.users().length).toBe(1);
+          expect(userRepository.users()[0]).toBe(user);
         });
       });
 
@@ -98,10 +105,10 @@ describe('z.user.UserRepository', () => {
         const user = new z.entity.User();
         user.id = entities.user.jane_roe.id;
 
-        return TestFactory.user_repository.save_user(user, true).then(() => {
-          expect(TestFactory.user_repository.users().length).toBe(1);
-          expect(TestFactory.user_repository.users()[0]).toBe(user);
-          expect(TestFactory.user_repository.self()).toBe(user);
+        return userRepository.save_user(user, true).then(() => {
+          expect(userRepository.users().length).toBe(1);
+          expect(userRepository.users()[0]).toBe(user);
+          expect(userRepository.self()).toBe(user);
         });
       });
     });
@@ -114,28 +121,26 @@ describe('z.user.UserRepository', () => {
         user_jane_roe = new z.entity.User(entities.user.jane_roe.id);
         user_john_doe = new z.entity.User(entities.user.john_doe.id);
 
-        return TestFactory.user_repository.save_users([user_jane_roe, user_john_doe]).then(() => {
-          const permanent_client = TestFactory.client_repository.clientMapper.mapClient(
-            entities.clients.john_doe.permanent
-          );
-          const plain_client = TestFactory.client_repository.clientMapper.mapClient(entities.clients.jane_roe.plain);
-          const temporary_client = TestFactory.client_repository.clientMapper.mapClient(
-            entities.clients.john_doe.temporary
-          );
+        return userRepository.save_users([user_jane_roe, user_john_doe]).then(() => {
+          const clientMapper = userRepository.client_repository.clientMapper;
+
+          const permanent_client = clientMapper.mapClient(entities.clients.john_doe.permanent);
+          const plain_client = clientMapper.mapClient(entities.clients.jane_roe.plain);
+          const temporary_client = clientMapper.mapClient(entities.clients.john_doe.temporary);
           const recipients = {
             [entities.user.john_doe.id]: [permanent_client, temporary_client],
             [entities.user.jane_roe.id]: [plain_client],
           };
 
-          spyOn(TestFactory.client_repository, 'getAllClientsFromDb').and.returnValue(Promise.resolve(recipients));
+          spyOn(userRepository.client_repository, 'getAllClientsFromDb').and.returnValue(Promise.resolve(recipients));
         });
       });
 
-      afterEach(() => TestFactory.user_repository.users.removeAll());
+      afterEach(() => userRepository.users.removeAll());
 
       it('assigns all available clients to the users', () => {
-        return TestFactory.user_repository._assignAllClients().then(() => {
-          expect(TestFactory.client_repository.getAllClientsFromDb).toHaveBeenCalled();
+        return userRepository._assignAllClients().then(() => {
+          expect(userRepository.client_repository.getAllClientsFromDb).toHaveBeenCalled();
           expect(user_jane_roe.devices().length).toBe(1);
           expect(user_jane_roe.devices()[0].id).toBe(entities.clients.jane_roe.plain.id);
           expect(user_john_doe.devices().length).toBe(2);
@@ -148,26 +153,26 @@ describe('z.user.UserRepository', () => {
     describe('verify_usernames', () => {
       it('resolves with username when username is not taken', () => {
         const usernames = ['john_doe'];
-        server.respondWith('POST', `${test_factory.settings.connection.restUrl}/users/handles`, [
+        server.respondWith('POST', `${connectionSettings.restUrl}/users/handles`, [
           200,
           {'Content-Type': 'application/json'},
           JSON.stringify(usernames),
         ]);
 
-        return TestFactory.user_repository.verify_usernames(usernames).then(_usernames => {
+        return userRepository.verify_usernames(usernames).then(_usernames => {
           expect(_usernames).toEqual(usernames);
         });
       });
 
       it('rejects when username is taken', () => {
         const usernames = ['john_doe'];
-        server.respondWith('POST', `${test_factory.settings.connection.restUrl}/users/handles`, [
+        server.respondWith('POST', `${connectionSettings.restUrl}/users/handles`, [
           200,
           {'Content-Type': 'application/json'},
           JSON.stringify([]),
         ]);
 
-        return TestFactory.user_repository.verify_usernames(usernames).then(_usernames => {
+        return userRepository.verify_usernames(usernames).then(_usernames => {
           expect(_usernames.length).toBe(0);
         });
       });
@@ -176,26 +181,18 @@ describe('z.user.UserRepository', () => {
     describe('verify_username', () => {
       it('resolves with username when username is not taken', () => {
         const username = 'john_doe';
-        server.respondWith('HEAD', `${test_factory.settings.connection.restUrl}/users/handles/${username}`, [
-          404,
-          {},
-          '',
-        ]);
+        server.respondWith('HEAD', `${connectionSettings.restUrl}/users/handles/${username}`, [404, {}, '']);
 
-        return TestFactory.user_repository.verify_username(username).then(_username => {
+        return userRepository.verify_username(username).then(_username => {
           expect(_username).toBe(username);
         });
       });
 
       it('rejects when username is taken', done => {
         const username = 'john_doe';
-        server.respondWith('HEAD', `${test_factory.settings.connection.restUrl}/users/handles/${username}`, [
-          200,
-          {},
-          '',
-        ]);
+        server.respondWith('HEAD', `${connectionSettings.restUrl}/users/handles/${username}`, [200, {}, '']);
 
-        TestFactory.user_repository
+        userRepository
           .verify_username(username)
           .then(done.fail)
           .catch(() => done());
