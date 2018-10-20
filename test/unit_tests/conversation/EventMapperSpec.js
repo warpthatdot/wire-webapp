@@ -22,18 +22,17 @@
 'use strict';
 
 describe('Event Mapper', () => {
-  const test_factory = new TestFactory();
   let conversation_et = null;
   let event_mapper = null;
 
   beforeAll(() => {
     return z.util.protobuf
       .loadProtos('ext/proto/@wireapp/protocol-messaging/messages.proto')
-      .then(() => test_factory.exposeUserActors())
-      .then(() => {
+      .then(() => new TestFactory().exposeUserActors())
+      .then(({service}) => {
         wire.app = {
           service: {
-            asset: TestFactory.asset_service,
+            asset: service.asset,
           },
         };
       });
