@@ -23,11 +23,10 @@
 
 describe('z.time.ServerTimeRepository', () => {
   let serverTimeRepository;
-  const testFactory = new window.TestFactory();
 
-  beforeEach(() => {
-    return testFactory.exposeServerActors().then(_serverTimeRepository => {
-      serverTimeRepository = _serverTimeRepository;
+  beforeAll(() => {
+    return new TestFactory().exposeServerActors().then(({repository}) => {
+      serverTimeRepository = repository.serverTime;
     });
   });
 
