@@ -193,6 +193,11 @@ class TestFactory {
       const permanentClientEntity = new z.client.ClientEntity(permanentClientData);
       this.repository.client.currentClient(permanentClientEntity);
 
+      this.repository.cryptography.currentClient = this.repository.client;
+      if (this.repository.event) {
+        this.repository.event.currentClient = this.repository.client;
+      }
+
       this.logger.info('✓ instantiated client Actors');
       return this;
     });
@@ -290,8 +295,7 @@ class TestFactory {
       return Promise.resolve(this);
     }
 
-    return this.exposeClientActors()
-      .then(() => this.exposeStorageActors())
+    return this.exposeStorageActors()
       .then(() => {
         this.service.cryptography = new z.cryptography.CryptographyService(this.backendClient);
 
@@ -300,7 +304,9 @@ class TestFactory {
           this.repository.storage
         );
 
-        this.repository.cryptography.currentClient = this.repository.client.currentClient;
+        const permanentClientData = entities.clients.john_doe.permanent;
+        const permanentClientEntity = new z.client.ClientEntity(permanentClientData);
+        this.repository.cryptography.currentClient = ko.observable(permanentClientEntity);
 
         if (!skipCryptobox) {
           return this.repository.cryptography.createCryptobox(this.service.storage.db);
@@ -357,7 +363,7 @@ class TestFactory {
 
     return this.exposeUserActors().then(() => {
       this.service.lifecycle = new z.lifecycle.LifecycleService();
-      this.reposirory.lifecycle = new z.lifecycle.LifecycleRepository(this.service.lifecycle, this.repository.user);
+      this.repository.lifecycle = new z.lifecycle.LifecycleRepository(this.service.lifecycle, this.repository.user);
 
       this.logger.info('✓ instantiated lifecycle actors');
       return this;
@@ -491,7 +497,7 @@ class TestFactory {
         this.service.storage = new z.storage.StorageService();
         this.repository.storage = new z.storage.StorageRepository(this.service.storage);
 
-        return TestFactory.storage_service.init(z.util.createRandomUuid());
+        return this.service.storage.init(z.util.createRandomUuid());
       })
       .then(() => {
         this.logger.info('✓ instantiated storage actors');
