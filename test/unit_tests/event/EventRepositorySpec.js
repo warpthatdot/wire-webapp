@@ -578,7 +578,7 @@ describe('Event Repository', () => {
         // cancel from an other user
         'other-user-id',
         // cancel from the self user
-        TestFactory.event_repository.userRepository.self().id,
+        TestFactory.event_repository.selfRepository.selfUser().id,
       ];
 
       const loadEventSpy = spyOn(TestFactory.event_service, 'loadEvent');
@@ -632,7 +632,7 @@ describe('Event Repository', () => {
         time: '2017-09-06T09:43:36.528Z',
       });
 
-      spyOn(TestFactory.user_repository, 'self').and.returnValue({id: assetAddEvent.from});
+      spyOn(TestFactory.self_repository, 'selfUser').and.returnValue({id: assetAddEvent.from});
       spyOn(TestFactory.event_service, 'loadEvent').and.returnValue(Promise.resolve(assetAddEvent));
       spyOn(TestFactory.event_service, 'updateEventAsUploadFailed').and.returnValue(
         Promise.resolve(assetUploadFailedEvent)

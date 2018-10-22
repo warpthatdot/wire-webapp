@@ -64,10 +64,9 @@ z.viewModel.MainViewModel = class MainViewModel {
     this.togglePanel = this.togglePanel.bind(this);
 
     this.elementId = 'wire-main';
-    this.userRepository = repositories.user;
     this.logger = new z.util.Logger('z.viewModel.MainViewModel', z.config.LOGGER.OPTIONS);
 
-    this.selfUser = this.userRepository.self;
+    this.selfUser = repositories.self.selfUser;
 
     this.isPanelOpen = ko.observable(false);
 

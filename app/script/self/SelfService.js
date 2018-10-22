@@ -178,14 +178,14 @@ z.self.SelfService = class SelfService {
    * @see https://staging-nginz-https.zinfra.io/swagger-ui/tab.html#!//changePassword
    *
    * @param {string} newPassword - New user password
-   * @param {string} [oldPassword] - Old password of the user
+   * @param {string} [currentPassword] - Current password of the user
    * @returns {Promise} Promise that resolves when password has been changed on backend
    */
-  putSelfPassword(newPassword, oldPassword) {
+  putSelfPassword(newPassword, currentPassword) {
     return this.backendClient.sendJson({
       data: {
         new_password: newPassword,
-        old_password: oldPassword,
+        old_password: currentPassword,
       },
       type: 'PUT',
       url: `${SelfService.URL.SELF}/password`,

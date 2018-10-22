@@ -41,16 +41,16 @@ z.backup.BackupRepository = class BackupRepository {
    * @param {z.client.ClientRepository} clientRepository - Repository for all client interactions
    * @param {z.connection.ConnectionRepository} connectionRepository - Repository for all connection interactions
    * @param {z.conversation.ConversationRepository} conversationRepository - Repository for all conversation interactions
-   * @param {z.user.UserRepository} userRepository - Repository for all user interactions
+   * @param {z.self.SelfRepository} selfRepository - Repository for all self interactions
    */
-  constructor(backupService, clientRepository, connectionRepository, conversationRepository, userRepository) {
+  constructor(backupService, clientRepository, connectionRepository, conversationRepository, selfRepository) {
     this.logger = new z.util.Logger('z.backup.BackupRepository', z.config.LOGGER.OPTIONS);
 
     this.backupService = backupService;
     this.clientRepository = clientRepository;
     this.connectionRepository = connectionRepository;
     this.conversationRepository = conversationRepository;
-    this.userRepository = userRepository;
+    this.selfRepository = selfRepository;
 
     this.canceled = false;
 
@@ -75,7 +75,7 @@ z.backup.BackupRepository = class BackupRepository {
       client_id: this.clientRepository.currentClient().id,
       creation_time: new Date().toISOString(),
       platform: 'Web',
-      user_id: this.userRepository.self().id,
+      user_id: this.selfRepository.selfUser().id,
       version: this.backupService.getDatabaseVersion(),
     };
   }

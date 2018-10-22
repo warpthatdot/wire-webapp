@@ -56,7 +56,7 @@ describe('z.backup.BackupRepository', () => {
       expect(metaDescription.client_id).toBe(TestFactory.client_repository.currentClient().id);
       expect(metaDescription.creation_time).toBe(freezedTime.toISOString());
       expect(metaDescription.platform).toBe('Web');
-      expect(metaDescription.user_id).toBe(TestFactory.user_repository.self().id);
+      expect(metaDescription.user_id).toBe(TestFactory.user_repository.selfUser().id);
       expect(metaDescription.version).toBe(TestFactory.backup_service.getDatabaseVersion());
     });
   });

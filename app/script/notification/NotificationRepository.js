@@ -54,13 +54,13 @@ z.notification.NotificationRepository = class NotificationRepository {
    * @param {z.calling.CallingRepository} callingRepository - Repository for all call interactions
    * @param {z.conversation.ConversationRepository} conversationRepository - Repository for all conversation interactions
    * @param {z.permission.PermissionRepository} permissionRepository - Repository for all permission interactions
-   * @param {z.user.UserRepository} userRepository - Repository for users
+   * @param {z.self.SelfRepository} selfRepository - Repository for all self interactions
    */
-  constructor(callingRepository, conversationRepository, permissionRepository, userRepository) {
+  constructor(callingRepository, conversationRepository, permissionRepository, selfRepository) {
     this.callingRepository = callingRepository;
     this.conversationRepository = conversationRepository;
     this.permissionRepository = permissionRepository;
-    this.userRepository = userRepository;
+    this.selfRepository = selfRepository;
 
     this.logger = new z.util.Logger('z.notification.NotificationRepository', z.config.LOGGER.OPTIONS);
 
@@ -76,7 +76,7 @@ z.notification.NotificationRepository = class NotificationRepository {
     });
 
     this.permissionState = this.permissionRepository.permissionState[z.permission.PermissionType.NOTIFICATIONS];
-    this.selfUser = this.userRepository.self;
+    this.selfUser = this.selfRepository.selfUser;
   }
 
   subscribeToEvents() {

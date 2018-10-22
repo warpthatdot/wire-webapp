@@ -39,19 +39,19 @@ z.viewModel.panel.ConversationDetailsViewModel = class ConversationDetailsViewMo
 
     const {mainViewModel, repositories} = params;
 
-    const {conversation, integration, search, team, user} = repositories;
+    const {conversation, integration, search, self, team} = repositories;
     this.conversationRepository = conversation;
     this.integrationRepository = integration;
     this.searchRepository = search;
-    this.teamRepository = team;
-    this.userRepository = user;
+    const selfRepository = self;
+    const teamRepository = team;
 
     this.actionsViewModel = mainViewModel.actions;
 
     this.logger = new z.util.Logger('z.viewModel.panel.ConversationDetailsViewModel', z.config.LOGGER.OPTIONS);
 
-    this.isActivatedAccount = this.userRepository.isActivatedAccount;
-    this.isTeam = this.teamRepository.isTeam;
+    this.isActivatedAccount = selfRepository.isActivatedAccount;
+    this.isTeam = teamRepository.isTeam;
 
     this.isTeamOnly = ko.pureComputed(() => this.activeConversation() && this.activeConversation().isTeamOnly());
 

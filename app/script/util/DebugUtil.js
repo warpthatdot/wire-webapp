@@ -25,7 +25,6 @@ window.z.util = z.util || {};
 z.util.DebugUtil = class DebugUtil {
   constructor(repositories) {
     const {calling, client, connection, conversation, cryptography, event, user, storage} = repositories;
-
     this.callingRepository = calling;
     this.clientRepository = client;
     this.conversationRepository = conversation;
@@ -80,7 +79,7 @@ z.util.DebugUtil = class DebugUtil {
     let recipients = [];
 
     const clientId = this.clientRepository.currentClient().id;
-    const userId = this.userRepository.self().id;
+    const userId = this.userRepository.selfUser().id;
 
     const isOTRMessage = notification => notification.type === z.event.Backend.CONVERSATION.OTR_MESSAGE_ADD;
     const isInCurrentConversation = notification => notification.conversation === conversationId;
@@ -140,7 +139,7 @@ z.util.DebugUtil = class DebugUtil {
       })
       .then(user_et => {
         debugInformation.user = user_et;
-        const logMessage = `Hey ${this.userRepository.self().name()}, this is for you:`;
+        const logMessage = `Hey ${this.userRepository.selfUser().name()}, this is for you:`;
         this.logger.warn(logMessage, debugInformation);
         this.logger.warn(`Conversation: ${debugInformation.conversation.name()}`, debugInformation.conversation);
         this.logger.warn(`From: ${debugInformation.user.name()}`, debugInformation.user);
@@ -150,7 +149,7 @@ z.util.DebugUtil = class DebugUtil {
 
   exportCryptobox() {
     const clientId = this.clientRepository.currentClient().id;
-    const userId = this.userRepository.self().id;
+    const userId = this.userRepository.selfUser().id;
     const fileName = `cryptobox-${userId}-${clientId}.json`;
 
     this.cryptographyRepository.cryptobox
@@ -179,7 +178,7 @@ z.util.DebugUtil = class DebugUtil {
 
   getNotificationsFromStream(remoteUserId, remoteClientId, matchingNotifications = [], notificationIdSince) {
     const localClientId = this.clientRepository.currentClient().id;
-    const localUserId = this.userRepository.self().id;
+    const localUserId = this.userRepository.selfUser().id;
 
     const _gotNotifications = ({hasMore, notifications}) => {
       const additionalNotifications = !remoteUserId

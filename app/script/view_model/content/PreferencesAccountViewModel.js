@@ -52,11 +52,11 @@ z.viewModel.content.PreferencesAccountViewModel = class PreferencesAccountViewMo
     this.clientRepository = repositories.client;
     this.conversationRepository = repositories.conversation;
     this.propertiesRepository = repositories.properties;
+    this.selfRepository = repositories.self;
     this.teamRepository = repositories.team;
-    this.userRepository = repositories.user;
 
-    this.isActivatedAccount = this.userRepository.isActivatedAccount;
-    this.selfUser = this.userRepository.self;
+    this.isActivatedAccount = this.selfRepository.isActivatedAccount;
+    this.selfUser = this.selfRepository.selfUser;
 
     this.newClients = ko.observableArray([]);
     this.name = ko.pureComputed(() => this.selfUser().name());
@@ -91,7 +91,7 @@ z.viewModel.content.PreferencesAccountViewModel = class PreferencesAccountViewMo
       this.propertiesRepository.savePreference(z.properties.PROPERTIES_TYPE.PRIVACY, privacyPreference);
     });
 
-    this.optionMarketingConsent = this.userRepository.marketingConsent;
+    this.optionMarketingConsent = this.selfRepository.marketingConsent;
     this.isMacOsWrapper = z.util.Environment.electron && z.util.Environment.os.mac;
 
     this._initSubscriptions();
@@ -104,7 +104,7 @@ z.viewModel.content.PreferencesAccountViewModel = class PreferencesAccountViewMo
   }
 
   changeAccentColor(id) {
-    this.userRepository.change_accent_color(id);
+    this.selfRepository.changeAccentColor(id);
   }
 
   changeName(viewModel, event) {
@@ -115,9 +115,9 @@ z.viewModel.content.PreferencesAccountViewModel = class PreferencesAccountViewMo
       return event.target.blur();
     }
 
-    const isValidName = newName.length >= z.user.UserRepository.CONFIG.MINIMUM_NAME_LENGTH;
+    const isValidName = newName.length >= z.self.SelfRepository.CONFIG.MINIMUM_NAME_LENGTH;
     if (isValidName) {
-      this.userRepository.change_name(newName).then(() => {
+      this.selfRepository.changeName(newName).then(() => {
         this.nameSaved(true);
         event.target.blur();
         window.setTimeout(() => this.nameSaved(false), PreferencesAccountViewModel.CONFIG.SAVE_ANIMATION_TIMEOUT);
@@ -139,14 +139,14 @@ z.viewModel.content.PreferencesAccountViewModel = class PreferencesAccountViewMo
       return event.target.blur();
     }
 
-    const isInvalidName = normalizedUsername.length < z.user.UserRepository.CONFIG.MINIMUM_USERNAME_LENGTH;
+    const isInvalidName = normalizedUsername.length < z.self.SelfRepository.CONFIG.MINIMUM_USERNAME_LENGTH;
     if (isInvalidName) {
       return this.usernameState(null);
     }
 
     this.submittedUsername(normalizedUsername);
-    this.userRepository
-      .change_username(normalizedUsername)
+    this.selfRepository
+      .changeUsername(normalizedUsername)
       .then(() => {
         const isCurrentRequest = this.enteredUsername() === this.submittedUsername();
         if (isCurrentRequest) {
@@ -226,7 +226,7 @@ z.viewModel.content.PreferencesAccountViewModel = class PreferencesAccountViewMo
 
   clickOnDeleteAccount() {
     amplify.publish(z.event.WebApp.WARNING.MODAL, z.viewModel.ModalsViewModel.TYPE.CONFIRM, {
-      action: () => this.userRepository.delete_me(),
+      action: () => this.selfRepository.deleteSelf(),
       text: {
         action: z.l10n.text(z.string.modalAccountDeletionAction),
         message: z.l10n.text(z.string.modalAccountDeletionMessage),
@@ -321,12 +321,12 @@ z.viewModel.content.PreferencesAccountViewModel = class PreferencesAccountViewMo
       return this._showUploadWarning(titleString, messageString);
     }
 
-    const minHeight = z.user.UserRepository.CONFIG.MINIMUM_PICTURE_SIZE.HEIGHT;
-    const minWidth = z.user.UserRepository.CONFIG.MINIMUM_PICTURE_SIZE.WIDTH;
+    const minHeight = z.self.SelfRepository.CONFIG.MINIMUM_PICTURE_SIZE.HEIGHT;
+    const minWidth = z.self.SelfRepository.CONFIG.MINIMUM_PICTURE_SIZE.WIDTH;
 
     return z.util.validateProfileImageResolution(newUserPicture, minWidth, minHeight).then(isValid => {
       if (isValid) {
-        return this.userRepository.change_picture(newUserPicture);
+        return this.selfRepository.changePicture(newUserPicture);
       }
 
       const messageString = z.l10n.text(z.string.modalPictureTooSmallMessage);
@@ -336,13 +336,13 @@ z.viewModel.content.PreferencesAccountViewModel = class PreferencesAccountViewMo
   }
 
   shouldFocusUsername() {
-    return this.userRepository.should_set_username;
+    return this.selfRepository.shouldSetUsername;
   }
 
   verifyUsername(username, event) {
     const enteredUsername = event.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
 
-    const usernameTooShort = enteredUsername.length < z.user.UserRepository.CONFIG.MINIMUM_USERNAME_LENGTH;
+    const usernameTooShort = enteredUsername.length < z.user.SelfRepository.CONFIG.MINIMUM_USERNAME_LENGTH;
     const usernameUnchanged = enteredUsername === this.selfUser().username();
     if (usernameTooShort || usernameUnchanged) {
       return this.usernameState(null);

@@ -102,11 +102,11 @@ z.main.App = class App {
     );
     repositories.client = new z.client.ClientRepository(this.service.client, repositories.cryptography);
     repositories.media = new z.media.MediaRepository(repositories.permission);
+    repositories.self = new z.self.SelfRepository(this.service.self, this.service.asset);
     repositories.user = new z.user.UserRepository(
       this.service.user,
-      this.service.asset,
-      this.service.self,
       repositories.client,
+      repositories.self,
       repositories.serverTime
     );
     repositories.connection = new z.connection.ConnectionRepository(this.service.connection, repositories.user);
@@ -116,11 +116,11 @@ z.main.App = class App {
       this.service.webSocket,
       this.service.conversation,
       repositories.cryptography,
-      repositories.serverTime,
-      repositories.user
+      repositories.self,
+      repositories.serverTime
     );
     repositories.properties = new z.properties.PropertiesRepository(this.service.properties);
-    repositories.lifecycle = new z.lifecycle.LifecycleRepository(this.service.lifecycle, repositories.user);
+    repositories.lifecycle = new z.lifecycle.LifecycleRepository(this.service.lifecycle, repositories.self);
     repositories.connect = new z.connect.ConnectRepository(
       this.service.connect,
       this.service.connectGoogle,
@@ -152,7 +152,7 @@ z.main.App = class App {
       repositories.client,
       repositories.connection,
       repositories.conversation,
-      repositories.user
+      repositories.self
     );
     repositories.broadcast = new z.broadcast.BroadcastRepository(
       this.service.broadcast,
@@ -179,7 +179,7 @@ z.main.App = class App {
       repositories.calling,
       repositories.conversation,
       repositories.permission,
-      repositories.user
+      repositories.self
     );
     repositories.videoGrid = new z.calling.VideoGridRepository(repositories.calling, repositories.media);
 
@@ -481,7 +481,7 @@ z.main.App = class App {
   _checkUserInformation(userEntity) {
     if (userEntity.hasActivatedIdentity()) {
       if (!userEntity.mediumPictureResource()) {
-        this.repository.user.set_default_picture();
+        this.repository.self.setDefaultPicture();
       }
       if (!userEntity.username()) {
         this.repository.user.get_username_suggestion();
@@ -595,7 +595,7 @@ z.main.App = class App {
     this.logger.info('Showing application UI');
     if (this.repository.user.isTemporaryGuest()) {
       this.view.list.showTemporaryGuest();
-    } else if (this.repository.user.shouldChangeUsername()) {
+    } else if (this.repository.self.shouldChangeUsername()) {
       this.view.list.showTakeover();
     } else if (conversationEntity) {
       amplify.publish(z.event.WebApp.CONVERSATION.SHOW, conversationEntity);
@@ -621,7 +621,7 @@ z.main.App = class App {
       this.repository.event.disconnectWebSocket(z.event.WebSocketService.CHANGE_TRIGGER.PAGE_NAVIGATION);
       this.repository.calling.leaveCallOnUnload();
 
-      if (this.repository.user.isActivatedAccount()) {
+      if (this.repository.self.isActivatedAccount()) {
         this.repository.storage.terminate('window.onunload');
       } else {
         this.repository.conversation.leaveGuestRoom();

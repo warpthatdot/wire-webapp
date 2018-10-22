@@ -25,7 +25,10 @@ window.z.viewModel = z.viewModel || {};
 z.viewModel.LoadingViewModel = class LoadingViewModel {
   constructor(mainViewModel, repositories) {
     this.elementId = 'loading-screen';
-    this.userRepository = repositories.user;
+
+    const selfRepository = repositories.self;
+    this.selfUser = selfRepository.selfUser;
+
     this.loadingMessage = ko.observable('');
     this.loadingProgress = ko.observable(0);
     amplify.subscribe(z.event.WebApp.APP.UPDATE_PROGRESS, this.updateProgress.bind(this));
@@ -48,7 +51,7 @@ z.viewModel.LoadingViewModel = class LoadingViewModel {
 
       switch (messageLocator) {
         case z.string.initReceivedSelfUser: {
-          updatedLoadingMessage = z.l10n.text(messageLocator, this.userRepository.self().first_name());
+          updatedLoadingMessage = z.l10n.text(messageLocator, this.selfUser().first_name());
           break;
         }
 

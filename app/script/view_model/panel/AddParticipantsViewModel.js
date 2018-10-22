@@ -45,7 +45,7 @@ z.viewModel.panel.AddParticipantsViewModel = class AddParticipantsViewModel exte
     this.logger = new z.util.Logger('z.viewModel.panel.AddParticipantsViewModel', z.config.LOGGER.OPTIONS);
 
     this.isTeam = this.teamRepository.isTeam;
-    this.selfUser = this.userRepository.self;
+    this.selfUser = this.userRepository.selfUser;
     this.services = this.integrationRepository.services;
     this.teamUsers = this.teamRepository.teamUsers;
     this.teamMembers = this.teamRepository.teamMembers;

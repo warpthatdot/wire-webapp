@@ -33,12 +33,14 @@ z.viewModel.list.PreferencesListViewModel = class PreferencesListViewModel {
   constructor(mainViewModel, listViewModel, repositories) {
     this.mainViewModel = mainViewModel;
     this.listViewModel = listViewModel;
-    this.userRepository = repositories.user;
+
+    const selfRepository = repositories.self;
+
     this.logger = new z.util.Logger('z.viewModel.list.PreferencesListViewModel', z.config.LOGGER.OPTIONS);
 
     this.contentViewModel = this.mainViewModel.content;
     this.contentState = this.contentViewModel.state;
-    this.isActivatedAccount = this.userRepository.isActivatedAccount;
+    this.isActivatedAccount = selfRepository.isActivatedAccount;
 
     this.selectedAbout = ko.pureComputed(() => {
       return this.contentState() === z.viewModel.ContentViewModel.STATE.PREFERENCES_ABOUT;

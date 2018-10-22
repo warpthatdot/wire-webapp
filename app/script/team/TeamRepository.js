@@ -37,7 +37,7 @@ z.team.TeamRepository = class TeamRepository {
     this.teamService = teamService;
     this.userRepository = userRepository;
 
-    this.selfUser = this.userRepository.self;
+    this.selfUser = this.userRepository.selfUser;
 
     this.team = ko.observable();
 

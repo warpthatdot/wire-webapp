@@ -57,13 +57,14 @@ z.viewModel.content.InputBarViewModel = class InputBarViewModel {
 
     this.emojiInput = contentViewModel.emojiInput;
 
-    this.conversationRepository = repositories.conversation;
-    this.searchRepository = repositories.search;
-    this.userRepository = repositories.user;
+    const {conversation, search, self} = repositories;
+    this.conversationRepository = conversation;
+    this.searchRepository = search;
+
     this.logger = new z.util.Logger('z.viewModel.content.InputBarViewModel', z.config.LOGGER.OPTIONS);
 
     this.conversationEntity = this.conversationRepository.active_conversation;
-    this.selfUser = this.userRepository.self;
+    this.selfUser = self.selfUser;
 
     this.conversationHasFocus = ko.observable(true).extend({notify: 'always'});
 

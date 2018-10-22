@@ -32,17 +32,19 @@ z.viewModel.list.TemporaryGuestViewModel = class TemporaryGuestViewModel {
    * @param {Object} repositories - Object containing all repositories
    */
   constructor(mainViewModel, listViewModel, repositories) {
-    this.conversationRepository = repositories.conversation;
-    this.userRepository = repositories.user;
-    this.callingRepository = repositories.calling;
     this.multitasking = mainViewModel.content.multitasking;
-    this.permissionRepository = repositories.permission;
-    this.videoGridRepository = repositories.videoGrid;
+
+    const {calling, conversation, permission, self, videoGrid} = repositories;
+    this.callingRepository = calling;
+    this.conversationRepository = conversation;
+    this.selfRepository = self;
+    this.permissionRepository = permission;
+    this.videoGridRepository = videoGrid;
 
     this.logger = new z.util.Logger('z.viewModel.list.TemporaryGuestViewModel', z.config.LOGGER.OPTIONS);
 
     this.callConversations = this.conversationRepository.conversations_calls;
-    this.selfUser = this.userRepository.self;
+    this.selfUser = this.selfRepository.selfUser;
   }
 
   clickOnPreferencesButton() {

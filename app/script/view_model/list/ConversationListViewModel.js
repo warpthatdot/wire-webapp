@@ -36,10 +36,7 @@ z.viewModel.list.ConversationListViewModel = class ConversationListViewModel {
     this.isSelectedConversation = this.isSelectedConversation.bind(this);
 
     this.callingRepository = repositories.calling;
-    this.conversationRepository = repositories.conversation;
     this.permissionRepository = repositories.permission;
-    this.teamRepository = repositories.team;
-    this.userRepository = repositories.user;
     this.videoGridRepository = repositories.videoGrid;
 
     this.contentViewModel = mainViewModel.content;
@@ -53,14 +50,21 @@ z.viewModel.list.ConversationListViewModel = class ConversationListViewModel {
     this.contentState = this.contentViewModel.state;
     this.selectedConversation = ko.observable();
 
-    this.isTeam = this.teamRepository.isTeam;
-    this.isActivatedAccount = this.userRepository.isActivatedAccount;
+    const {
+      conversation: conversationRepository,
+      self: selfRepository,
+      team: teamRepository,
+      user: userRepository,
+    } = repositories;
 
-    this.selfUser = ko.pureComputed(() => this.userRepository.self && this.userRepository.self());
+    this.isTeam = teamRepository.isTeam;
+    this.isActivatedAccount = selfRepository.isActivatedAccount;
+
+    this.selfUser = selfRepository.selfUser;
     this.selfAvailability = ko.pureComputed(() => this.selfUser() && this.selfUser().availability());
     this.selfUserName = ko.pureComputed(() => this.selfUser() && this.selfUser().name());
 
-    this.connectRequests = this.userRepository.connect_requests;
+    this.connectRequests = userRepository.connect_requests;
     this.connectRequestsText = ko.pureComputed(() => {
       const hasMultipleRequests = this.connectRequests().length > 1;
       const stringId = hasMultipleRequests
@@ -73,9 +77,10 @@ z.viewModel.list.ConversationListViewModel = class ConversationListViewModel {
       return this.contentState() === z.viewModel.ContentViewModel.STATE.CONNECTION_REQUESTS;
     });
 
-    this.callConversations = this.conversationRepository.conversations_calls;
-    this.archivedConversations = this.conversationRepository.conversations_archived;
-    this.unarchivedConversations = this.conversationRepository.conversations_unarchived;
+    this.callConversations = conversationRepository.conversations_calls;
+    this.archivedConversations = conversationRepository.conversations_archived;
+    this.unarchivedConversations = conversationRepository.conversations_unarchived;
+    this.is_active_conversation = conversationRepository.is_active_conversation;
 
     this.noConversations = ko.pureComputed(() => {
       const noConversations = !this.unarchivedConversations().length && !this.callConversations().length;
@@ -92,9 +97,7 @@ z.viewModel.list.ConversationListViewModel = class ConversationListViewModel {
       .extend({notify: 'always', rateLimit: 500});
 
     this.activeConversationId = ko.pureComputed(() => {
-      if (this.conversationRepository.active_conversation()) {
-        return this.conversationRepository.active_conversation().id;
-      }
+      return conversationRepository.active_conversation() && conversationRepository.active_conversation().id;
     });
 
     this.archiveTooltip = ko.pureComputed(() => {
@@ -150,7 +153,7 @@ z.viewModel.list.ConversationListViewModel = class ConversationListViewModel {
       z.viewModel.ContentViewModel.STATE.CONVERSATION,
     ];
 
-    const isSelectedConversation = this.conversationRepository.is_active_conversation(conversationEntity);
+    const isSelectedConversation = this.is_active_conversation(conversationEntity);
     const isExpectedState = expectedStates.includes(this.contentState());
 
     return isSelectedConversation && isExpectedState;

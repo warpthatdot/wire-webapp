@@ -42,9 +42,9 @@ z.viewModel.content.PreferencesAVViewModel = class PreferencesAVViewModel {
     this.logger = new z.util.Logger('z.viewModel.content.PreferencesAVViewModel', z.config.LOGGER.OPTIONS);
 
     this.mediaRepository = repositories.media;
-    this.userRepository = repositories.user;
+    this.selfRepository = repositories.self;
 
-    this.isActivatedAccount = this.userRepository.isActivatedAccount;
+    this.isActivatedAccount = this.selfRepository.isActivatedAccount;
 
     this.devicesHandler = this.mediaRepository.devicesHandler;
     this.availableDevices = this.devicesHandler.availableDevices;
@@ -57,7 +57,7 @@ z.viewModel.content.PreferencesAVViewModel = class PreferencesAVViewModel {
 
     this.isVisible = false;
 
-    const selfUser = this.userRepository.self;
+    const selfUser = this.selfRepository.selfUser;
     this.isTemporaryGuest = ko.pureComputed(() => selfUser() && selfUser().isTemporaryGuest());
 
     this.mediaStream.subscribe(mediaStream => {

@@ -40,8 +40,10 @@ z.viewModel.content.HistoryExportViewModel = class HistoryExportViewModel {
   }
 
   constructor(mainViewModel, contentViewModel, repositories) {
-    this.backupRepository = repositories.backup;
-    this.userRepository = repositories.user;
+    const {backup, self} = repositories;
+    this.backupRepository = backup;
+    this.selfRepository = self;
+
     this.logger = new z.util.Logger('z.viewModel.content.HistoryExportViewModel', z.config.LOGGER.OPTIONS);
 
     this.hasError = ko.observable(false);
@@ -111,7 +113,7 @@ z.viewModel.content.HistoryExportViewModel = class HistoryExportViewModel {
   }
 
   downloadArchiveFile() {
-    const userName = this.userRepository.self().username();
+    const userName = this.selfRepository.selfUser().username();
     const fileExtension = HistoryExportViewModel.CONFIG.FILE_EXTENSION;
     const filename = `Wire-${userName}-Backup_${z.util.TimeUtil.getCurrentDate()}.${fileExtension}`;
 

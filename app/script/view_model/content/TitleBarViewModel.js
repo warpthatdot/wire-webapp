@@ -28,14 +28,16 @@ z.viewModel.content.TitleBarViewModel = class TitleBarViewModel {
   constructor(mainViewModel, contentViewModel, repositories) {
     this.addedToView = this.addedToView.bind(this);
 
-    this.callingRepository = repositories.calling;
-    this.conversationRepository = repositories.conversation;
-    this.userRepository = repositories.user;
-    this.multitasking = contentViewModel.multitasking;
+    const {calling, conversation, self} = repositories;
+    this.callingRepository = calling;
+    this.conversationRepository = conversation;
+    this.selfRepository = self;
+
     this.logger = new z.util.Logger('z.viewModel.content.TitleBarViewModel', z.config.LOGGER.OPTIONS);
 
     this.panelViewModel = mainViewModel.panel;
 
+    this.multitasking = contentViewModel.multitasking;
     this.panelIsVisible = this.panelViewModel.isVisible;
 
     // TODO remove the titlebar for now to ensure that buttons are clickable in macOS wrappers
@@ -45,7 +47,7 @@ z.viewModel.content.TitleBarViewModel = class TitleBarViewModel {
 
     this.joinedCall = this.callingRepository.joinedCall;
     this.selfStreamState = this.callingRepository.selfStreamState;
-    this.isActivatedAccount = this.userRepository.isActivatedAccount;
+    this.isActivatedAccount = this.selfRepository.isActivatedAccount;
 
     this.hasCall = ko.pureComputed(() => {
       const hasEntities = this.conversationEntity() && this.joinedCall();

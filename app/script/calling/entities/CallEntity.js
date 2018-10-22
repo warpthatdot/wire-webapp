@@ -70,7 +70,7 @@ z.calling.entities.CallEntity = class CallEntity {
 
     this.mediaRepository = mediaRepository;
     this.userRepository = userRepository;
-    this.selfUser = this.userRepository.self();
+    this.selfUser = this.userRepository.selfUser();
     this.selfState = selfStreamState;
     this.telemetry = telemetry;
 

@@ -24,11 +24,13 @@ window.z.viewModel = z.viewModel || {};
 
 z.viewModel.ActionsViewModel = class ActionsViewModel {
   constructor(mainViewModel, repositories) {
-    this.clientRepository = repositories.client;
-    this.connectionRepository = repositories.connection;
-    this.conversationRepository = repositories.conversation;
-    this.integrationRepository = repositories.integration;
-    this.userRepository = repositories.user;
+    const {client, connection, conversation, integration, self} = repositories;
+    this.clientRepository = client;
+    this.connectionRepository = connection;
+    this.conversationRepository = conversation;
+    this.integrationRepository = integration;
+    this.selfRepository = self;
+
     this.logger = new z.util.Logger('z.viewModel.ListViewModel', z.config.LOGGER.OPTIONS);
   }
 
@@ -161,7 +163,7 @@ z.viewModel.ActionsViewModel = class ActionsViewModel {
   leaveConversation(conversationEntity) {
     if (conversationEntity) {
       amplify.publish(z.event.WebApp.WARNING.MODAL, z.viewModel.ModalsViewModel.TYPE.CONFIRM, {
-        action: () => this.conversationRepository.removeMember(conversationEntity, this.userRepository.self().id),
+        action: () => this.conversationRepository.removeMember(conversationEntity, this.selfRepository.selfUser().id),
         text: {
           action: z.l10n.text(z.string.modalConversationLeaveAction),
           message: z.l10n.text(z.string.modalConversationLeaveMessage),

@@ -53,7 +53,7 @@ z.event.preprocessor.ServiceMiddleware = class ServiceMiddleware {
     this.logger.info(`Preprocessing event of type ${event.type}`);
 
     const {conversation: conversationId, data: eventData} = event;
-    const selfUserId = this.userRepository.self().id;
+    const selfUserId = this.userRepository.selfUser().id;
     const containsSelfUser = eventData.user_ids.includes(selfUserId);
 
     const getUsersPromise = containsSelfUser

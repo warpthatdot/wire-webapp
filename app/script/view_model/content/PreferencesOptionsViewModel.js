@@ -31,14 +31,15 @@ z.viewModel.content.PreferencesOptionsViewModel = class PreferencesOptionsViewMo
   }
 
   constructor(mainViewModel, contentViewModel, repositories) {
+    const {calling, properties, team, self} = repositories;
+    this.callingRepository = calling;
+    this.propertiesRepository = properties;
+    this.teamRepository = team;
+    this.selfRepository = self;
+
     this.logger = new z.util.Logger('z.viewModel.content.PreferencesOptionsViewModel', z.config.LOGGER.OPTIONS);
 
-    this.callingRepository = repositories.calling;
-    this.propertiesRepository = repositories.properties;
-    this.teamRepository = repositories.team;
-    this.userRepository = repositories.user;
-
-    this.isActivatedAccount = this.userRepository.isActivatedAccount;
+    this.isActivatedAccount = this.selfRepository.isActivatedAccount;
     this.isTeam = this.teamRepository.isTeam;
 
     this.optionAudio = ko.observable();
@@ -80,7 +81,7 @@ z.viewModel.content.PreferencesOptionsViewModel = class PreferencesOptionsViewMo
       const callLog = [messageLog.join('\r\n')];
       const blob = new Blob(callLog, {type: 'text/plain;charset=utf-8'});
 
-      const selfUserId = this.userRepository.self().id;
+      const selfUserId = this.selfRepository.selfUser().id;
       const truncatedId = selfUserId.substr(0, z.telemetry.calling.CallLogger.CONFIG.OBFUSCATION_TRUNCATE_TO);
       const filename = `Wire-${truncatedId}-Calling_${z.util.TimeUtil.getCurrentDate()}.log`;
 

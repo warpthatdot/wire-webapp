@@ -46,14 +46,17 @@ z.viewModel.content.MessageListViewModel = class MessageListViewModel {
     this.showUserDetails = this.showUserDetails.bind(this);
 
     this.mainViewModel = mainViewModel;
-    this.conversation_repository = repositories.conversation;
-    this.integrationRepository = repositories.integration;
-    this.locationRepository = repositories.location;
-    this.userRepository = repositories.user;
+
+    const {conversation, integration, location, user} = repositories;
+    this.conversation_repository = conversation;
+    this.integrationRepository = integration;
+    this.locationRepository = location;
+    this.userRepository = user;
+
     this.logger = new z.util.Logger('z.viewModel.content.MessageListViewModel', z.config.LOGGER.OPTIONS);
 
     this.actionsViewModel = this.mainViewModel.actions;
-    this.selfUser = this.userRepository.self;
+    this.selfUser = this.userRepository.selfUser;
 
     this.conversation = ko.observable(new z.entity.Conversation());
     this.verticallyCenterMessage = ko.pureComputed(() => {

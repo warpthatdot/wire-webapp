@@ -31,12 +31,11 @@ z.lifecycle.LifecycleRepository = class LifecycleRepository {
     };
   }
 
-  constructor(lifecycleService, userRepository) {
+  constructor(lifecycleService, selfRepository) {
     this.logger = new z.util.Logger('z.lifecycle.LifecycleRepository', z.config.LOGGER.OPTIONS);
     this.lifecycleService = lifecycleService;
-    this.userRepository = userRepository;
 
-    this.isActivatedAccount = this.userRepository.isActivatedAccount;
+    this.isActivatedAccount = selfRepository.isActivatedAccount;
   }
 
   init() {

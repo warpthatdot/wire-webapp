@@ -59,8 +59,8 @@ z.event.EventRepository = class EventRepository {
    * @param {z.event.WebSocketService} webSocketService - Service that connects to WebSocket
    * @param {z.conversation.ConversationService} conversationService - Service to handle conversation related tasks
    * @param {z.cryptography.CryptographyRepository} cryptographyRepository - Repository for all cryptography interactions
+   * @param {z.self.SelfRepository} selfRepository - Repository for all self interactions
    * @param {z.time.ServerTimeRepository} serverTimeRepository - Handles time shift between server and client
-   * @param {z.user.UserRepository} userRepository - Repository for all user interactions
    */
   constructor(
     eventService,
@@ -68,16 +68,16 @@ z.event.EventRepository = class EventRepository {
     webSocketService,
     conversationService,
     cryptographyRepository,
-    serverTimeRepository,
-    userRepository
+    selfRepository,
+    serverTimeRepository
   ) {
     this.eventService = eventService;
     this.notificationService = notificationService;
     this.webSocketService = webSocketService;
     this.conversationService = conversationService;
     this.cryptographyRepository = cryptographyRepository;
+    this.selfRepository = selfRepository;
     this.serverTimeRepository = serverTimeRepository;
-    this.userRepository = userRepository;
     this.logger = new z.util.Logger('z.event.EventRepository', z.config.LOGGER.OPTIONS);
 
     this.currentClient = undefined;
@@ -532,7 +532,7 @@ z.event.EventRepository = class EventRepository {
     }
 
     const {conversation: conversationId, id = 'ID not specified', type} = event;
-    const inSelfConversation = conversationId === this.userRepository.self().id;
+    const inSelfConversation = conversationId === this.selfRepository.selfUser().id;
     if (!inSelfConversation) {
       this.logger.info(`Injected event ID '${id}' of type '${type}'`, event);
       return this._handleEvent(event, source);
@@ -736,7 +736,7 @@ z.event.EventRepository = class EventRepository {
 
       case z.assets.AssetTransferState.UPLOAD_FAILED: {
         // case of both failed or canceled upload
-        const fromOther = newEvent.from !== this.userRepository.self().id;
+        const fromOther = newEvent.from !== this.selfRepository.selfUser().id;
         const selfCancel = !fromOther && newEvent.data.reason === z.assets.AssetUploadFailedReason.CANCELLED;
         // we want to delete the event in the case of an error from the remote client or a cancel on the user's own client
         const shouldDeleteEvent = fromOther || selfCancel;

@@ -33,11 +33,14 @@ z.viewModel.list.TakeoverViewModel = class TakeoverViewModel {
    */
   constructor(mainViewModel, listViewModel, repositories) {
     this.listViewModel = listViewModel;
-    this.conversationRepository = repositories.conversation;
-    this.userRepository = repositories.user;
+
+    const {conversation, user} = repositories;
+    this.conversationRepository = conversation;
+    this.userRepository = user;
+
     this.logger = new z.util.Logger('z.viewModel.list.TakeoverViewModel', z.config.LOGGER.OPTIONS);
 
-    this.selfUser = this.userRepository.self;
+    this.selfUser = this.userRepository.selfUser;
 
     this.name = ko.pureComputed(() => (this.selfUser() ? this.selfUser().name() : ''));
     this.username = ko.pureComputed(() => (this.selfUser() ? this.selfUser().username() : ''));
@@ -49,8 +52,8 @@ z.viewModel.list.TakeoverViewModel = class TakeoverViewModel {
   }
 
   keepUsername() {
-    this.userRepository
-      .change_username(this.username())
+    this.selfRepository
+      .changeUsername(this.username())
       .then(() => {
         const conversationEntity = this.conversationRepository.getMostRecentConversation();
         if (conversationEntity) {

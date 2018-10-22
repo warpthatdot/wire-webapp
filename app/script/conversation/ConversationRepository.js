@@ -108,7 +108,7 @@ z.conversation.ConversationRepository = class ConversationRepository {
     this.team = this.team_repository.team;
     this.teamMembers = this.team_repository.teamMembers;
 
-    this.selfUser = this.user_repository.self;
+    this.selfUser = this.user_repository.selfUser;
 
     this.block_event_handling = ko.observable(true);
     this.fetching_conversations = {};

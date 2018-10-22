@@ -101,7 +101,7 @@ describe('z.user.UserRepository', () => {
         return TestFactory.user_repository.save_user(user, true).then(() => {
           expect(TestFactory.user_repository.users().length).toBe(1);
           expect(TestFactory.user_repository.users()[0]).toBe(user);
-          expect(TestFactory.user_repository.self()).toBe(user);
+          expect(TestFactory.user_repository.selfUser()).toBe(user);
         });
       });
     });

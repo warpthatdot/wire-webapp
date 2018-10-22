@@ -23,37 +23,23 @@ window.z = window.z || {};
 window.z.user = z.user || {};
 
 z.user.UserRepository = class UserRepository {
-  static get CONFIG() {
-    return {
-      MINIMUM_NAME_LENGTH: 2,
-      MINIMUM_PICTURE_SIZE: {
-        HEIGHT: 320,
-        WIDTH: 320,
-      },
-      MINIMUM_USERNAME_LENGTH: 2,
-    };
-  }
-
   /**
    * Construct a new User repository.
    * @class z.user.UserRepository
    * @param {z.user.UserService} user_service - Backend REST API user service implementation
-   * @param {z.assets.AssetService} asset_service - Backend REST API asset service implementation
-   * @param {z.self.SelfService} selfService - Backend REST API self service implementation
    * @param {z.client.ClientRepository} client_repository - Repository for all client interactions
+   * @param {z.self.SelfRepository} selfRepository - Repository for all self interactions
    * @param {z.time.ServerTimeRepository} serverTimeRepository - Handles time shift between server and client
    */
-  constructor(user_service, asset_service, selfService, client_repository, serverTimeRepository) {
+  constructor(user_service, client_repository, selfRepository, serverTimeRepository) {
     this.user_service = user_service;
-    this.asset_service = asset_service;
-    this.selfService = selfService;
     this.client_repository = client_repository;
+    this.selfRepository = selfRepository;
     this.logger = new z.util.Logger('z.user.UserRepository', z.config.LOGGER.OPTIONS);
 
     this.user_mapper = new z.user.UserMapper(serverTimeRepository);
-    this.should_set_username = false;
 
-    this.self = ko.observable();
+    this.selfUser = this.selfRepository.selfUser;
     this.users = ko.observableArray([]);
 
     this.connect_requests = ko
@@ -70,9 +56,6 @@ z.user.UserRepository = class UserRepository {
       })
       .extend({rateLimit: z.util.TimeUtil.UNITS_IN_MILLIS.SECOND});
 
-    this.isActivatedAccount = ko.pureComputed(() => this.self() && !this.self().isTemporaryGuest());
-    this.isTemporaryGuest = ko.pureComputed(() => this.self() && this.self().isTemporaryGuest());
-
     this.isTeam = ko.observable();
     this.teamMembers = undefined;
     this.teamUsers = undefined;
@@ -85,12 +68,9 @@ z.user.UserRepository = class UserRepository {
       amplify.publish(z.event.WebApp.ANALYTICS.SUPER_PROPERTY, z.tracking.SuperProperty.CONTACTS, number_of_contacts);
     });
 
-    this.marketingConsent = ko.observable(false);
-
     amplify.subscribe(z.event.WebApp.CLIENT.ADD, this.addClientToUser.bind(this));
     amplify.subscribe(z.event.WebApp.CLIENT.REMOVE, this.remove_client_from_user.bind(this));
     amplify.subscribe(z.event.WebApp.CLIENT.UPDATE, this.update_clients_from_user.bind(this));
-    amplify.subscribe(z.event.WebApp.USER.SET_AVAILABILITY, this.setAvailability.bind(this));
     amplify.subscribe(z.event.WebApp.USER.EVENT_FROM_BACKEND, this.on_user_event.bind(this));
     amplify.subscribe(z.event.WebApp.USER.PERSIST, this.saveUserInDb.bind(this));
     amplify.subscribe(z.event.WebApp.USER.UPDATE, this.updateUserById.bind(this));
@@ -111,7 +91,7 @@ z.user.UserRepository = class UserRepository {
 
     switch (type) {
       case z.event.Backend.USER.DELETE:
-        this.user_delete(event_json);
+        this.onUserDelete(event_json);
         break;
       case z.event.Backend.USER.UPDATE:
         this.user_update(event_json);
@@ -156,13 +136,10 @@ z.user.UserRepository = class UserRepository {
    * @param {string} id - User ID of deleted user
    * @returns {undefined} No return value
    */
-  user_delete({id}) {
-    // @todo Add user deletion cases for other users
-    const is_self_user = id === this.self().id;
-    if (is_self_user) {
-      window.setTimeout(() => {
-        amplify.publish(z.event.WebApp.LIFECYCLE.SIGN_OUT, z.auth.SIGN_OUT_REASON.ACCOUNT_DELETED, true);
-      }, 50);
+  onUserDelete({id: userId}) {
+    const isSelfUser = userId === this.self().id;
+    if (!isSelfUser) {
+      this.logger.info(`Remote user '${userId}' was deleted`);
     }
   }
 
@@ -186,18 +163,13 @@ z.user.UserRepository = class UserRepository {
    * @param {Object} user - Update user info
    * @returns {Promise} Resolves wit the updated user entity
    */
-  user_update({user}) {
-    const is_self_user = user.id === this.self().id;
-    const user_promise = is_self_user ? Promise.resolve(this.self()) : this.get_user_by_id(user.id);
-    return user_promise.then(user_et => {
-      this.user_mapper.updateUserFromObject(user_et, user);
-
-      if (is_self_user) {
-        amplify.publish(z.event.WebApp.TEAM.UPDATE_INFO);
-      }
-
-      return user_et;
-    });
+  onUserUpdate({user: userData}) {
+    const isSelfUser = userData.id === this.self().id;
+    if (!isSelfUser) {
+      return this.get_user_by_id(userData.id).then(userEntity => {
+        return this.user_mapper.updateUserFromObject(userEntity, userData);
+      });
+    }
   }
 
   /**
@@ -293,50 +265,6 @@ z.user.UserRepository = class UserRepository {
     });
   }
 
-  setAvailability(availability, method) {
-    const hasAvailabilityChanged = availability !== this.self().availability();
-    const newAvailabilityValue = z.user.AvailabilityMapper.valueFromType(availability);
-    if (hasAvailabilityChanged) {
-      const oldAvailabilityValue = z.user.AvailabilityMapper.valueFromType(this.self().availability());
-      this.logger.log(`Availability was changed from '${oldAvailabilityValue}' to '${newAvailabilityValue}'`);
-      this.self().availability(availability);
-      this._trackAvailability(availability, method);
-    } else {
-      this.logger.log(`Availability was again set to '${newAvailabilityValue}'`);
-    }
-
-    const genericMessage = new z.proto.GenericMessage(z.util.createRandomUuid());
-    const protoAvailability = new z.proto.Availability(z.user.AvailabilityMapper.protoFromType(availability));
-    genericMessage.set(z.cryptography.GENERIC_MESSAGE_TYPE.AVAILABILITY, protoAvailability);
-
-    amplify.publish(z.event.WebApp.BROADCAST.SEND_MESSAGE, genericMessage);
-  }
-
-  /**
-   * Track availability action.
-   *
-   * @param {z.user.AvailabilityType} availability - Type of availability
-   * @param {string} method - Method used for availability change
-   * @returns {undefined} No return value
-   */
-  _trackAvailability(availability, method) {
-    amplify.publish(z.event.WebApp.ANALYTICS.EVENT, z.tracking.EventName.SETTINGS.CHANGED_STATUS, {
-      method: method,
-      status: z.user.AvailabilityMapper.valueFromType(availability),
-    });
-  }
-
-  /**
-   * Request account deletion.
-   * @returns {Promise} Promise that resolves when account deletion process has been initiated
-   */
-  delete_me() {
-    return this.selfService
-      .deleteSelf()
-      .then(() => this.logger.info('Account deletion initiated'))
-      .catch(error => this.logger.error(`Unable to delete self: ${error}`));
-  }
-
   /**
    * Get a user from the backend.
    * @param {string} userId - User ID
@@ -407,49 +335,6 @@ z.user.UserRepository = class UserRepository {
     return matchingUserEntity
       ? Promise.resolve(matchingUserEntity)
       : Promise.reject(new z.error.UserError(z.error.UserError.TYPE.USER_NOT_FOUND));
-  }
-
-  /**
-   * Get self user from backend.
-   * @returns {Promise} Promise that will resolve with the self user entity
-   */
-  getSelf() {
-    return this.selfService
-      .getSelf()
-      .then(userData => this._upgradePictureAsset(userData))
-      .then(response => this.user_mapper.map_self_user_from_object(response))
-      .then(userEntity => {
-        const promises = [this.save_user(userEntity, true), this.getMarketingConsent()];
-        return Promise.all(promises).then(() => userEntity);
-      })
-      .catch(error => {
-        this.logger.error(`Unable to load self user: ${error.message || error}`, [error]);
-        throw error;
-      });
-  }
-
-  /**
-   * Detects if the user has a profile picture that uses the outdated picture API.
-   * Will migrate the picture to the newer assets API if so.
-   *
-   * @param {Object} userData - user data from the backend
-   * @returns {void}
-   */
-  _upgradePictureAsset(userData) {
-    const hasPicture = userData.picture.length;
-    const hasAsset = userData.assets.length;
-
-    if (hasPicture) {
-      if (!hasAsset) {
-        // if there are no assets, just upload the old picture to the new api
-        const {medium} = z.assets.AssetMapper.mapProfileAssetsV1(userData.id, userData.picture);
-        medium.load().then(imageBlob => this.change_picture(imageBlob));
-      } else {
-        // if an asset is already there, remove the pointer to the old picture
-        this.selfService.putSelf({picture: []});
-      }
-    }
-    return userData;
   }
 
   /**
@@ -529,7 +414,7 @@ z.user.UserRepository = class UserRepository {
     if (!_.isString(user_id)) {
       user_id = user_id.id;
     }
-    return this.self().id === user_id;
+    return this.sel().id === user_id;
   }
 
   /**
@@ -546,7 +431,7 @@ z.user.UserRepository = class UserRepository {
 
       if (is_me) {
         user_et.is_me = true;
-        this.self(user_et);
+        this.selfUser(user_et);
       }
       this.users.push(user_et);
       return user_et;
@@ -624,38 +509,6 @@ z.user.UserRepository = class UserRepository {
   }
 
   /**
-   * Change the accent color.
-   * @param {number} accent_id - New accent color
-   * @returns {Promise} Resolves when accent color was changed
-   */
-  change_accent_color(accent_id) {
-    return this.selfService
-      .putSelf({accent_id})
-      .then(() => this.user_update({user: {accent_id: accent_id, id: this.self().id}}));
-  }
-
-  /**
-   * Change name.
-   * @param {string} name - New name
-   * @returns {Promise} Resolves when the name was changed
-   */
-  change_name(name) {
-    if (name.length >= UserRepository.CONFIG.MINIMUM_NAME_LENGTH) {
-      return this.selfService.putSelf({name}).then(() => this.user_update({user: {id: this.self().id, name: name}}));
-    }
-
-    return Promise.reject(new z.error.UserError(z.userUserError.TYPE.INVALID_UPDATE));
-  }
-
-  /**
-   * Whether the user needs to set a username.
-   * @returns {boolean} True, if username should be changed.
-   */
-  shouldChangeUsername() {
-    return this.should_set_username;
-  }
-
-  /**
    * Tries to generate a username suggestion.
    * @returns {Promise} Resolves with the username suggestions
    */
@@ -678,35 +531,6 @@ z.user.UserRepository = class UserRepository {
 
         throw error;
       });
-  }
-
-  /**
-   * Change username.
-   * @param {string} username - New username
-   * @returns {Promise} Resolves when the username was changed
-   */
-  change_username(username) {
-    if (username.length >= UserRepository.CONFIG.MINIMUM_USERNAME_LENGTH) {
-      return this.selfService
-        .putSelfHandle(username)
-        .then(() => {
-          this.should_set_username = false;
-          return this.user_update({user: {handle: username, id: this.self().id}});
-        })
-        .catch(({code: error_code}) => {
-          if (
-            [
-              z.error.BackendClientError.STATUS_CODE.CONFLICT,
-              z.error.BackendClientError.STATUS_CODE.BAD_REQUEST,
-            ].includes(error_code)
-          ) {
-            throw new z.error.UserError(z.error.UserError.TYPE.USERNAME_TAKEN);
-          }
-          throw new z.error.UserError(z.error.UserError.TYPE.REQUEST_FAILURE);
-        });
-    }
-
-    return Promise.reject(new z.error.UserError(z.userUserError.TYPE.INVALID_UPDATE));
   }
 
   /**
@@ -743,36 +567,6 @@ z.user.UserRepository = class UserRepository {
       });
   }
 
-  /**
-   * Change the profile image.
-   * @param {string|Object} picture - New user picture
-   * @returns {Promise} Resolves when the picture was updated
-   */
-  change_picture(picture) {
-    return this.asset_service
-      .uploadProfileImage(picture)
-      .then(({previewImageKey, mediumImageKey}) => {
-        const assets = [
-          {key: previewImageKey, size: 'preview', type: 'image'},
-          {key: mediumImageKey, size: 'complete', type: 'image'},
-        ];
-        return this.selfService
-          .putSelf({assets, picture: []})
-          .then(() => this.user_update({user: {assets: assets, id: this.self().id}}));
-      })
-      .catch(error => {
-        throw new Error(`Error during profile image upload: ${error.message || error.code || error}`);
-      });
-  }
-
-  /**
-   * Set users default profile image.
-   * @returns {undefined} No return value
-   */
-  set_default_picture() {
-    return z.util.loadUrlBlob(z.config.UNSPLASH_URL).then(blob => this.change_picture(blob));
-  }
-
   mapGuestStatus(userEntities = this.users()) {
     userEntities.forEach(userEntity => {
       if (!userEntity.is_me) {
@@ -781,41 +575,6 @@ z.user.UserRepository = class UserRepository {
         userEntity.isGuest(isGuest);
         userEntity.isTeamMember(isTeamMember);
       }
-    });
-  }
-
-  getMarketingConsent() {
-    return this.selfService
-      .getSelfConsent()
-      .then(consents => {
-        for (const {type: consentType, value: consentValue} of consents) {
-          const isMarketingConsent = consentType === z.user.ConsentType.MARKETING;
-          if (isMarketingConsent) {
-            const hasGivenConsent = consentValue === z.user.ConsentValue.GIVEN;
-            this.marketingConsent(hasGivenConsent);
-            this.marketingConsent.subscribe(changedConsentValue => this.changeMarketingConsent(changedConsentValue));
-
-            this.logger.log(`Marketing consent retrieved as '${consentValue}'`);
-            return;
-          }
-        }
-
-        this.logger.log(`Marketing consent not set. Defaulting to '${this.marketingConsent()}'`);
-      })
-      .catch(error => {
-        this.logger.warn(`Failed to retrieve marketing consent: ${error.message || error.code}`, error);
-      });
-  }
-
-  setConsent(consentType, consentValue) {
-    return this.selfService.putSelfConsent(consentType, consentValue, `Webapp ${z.util.Environment.version(false)}`);
-  }
-
-  changeMarketingConsent(consentGiven) {
-    const consentValue = consentGiven ? z.user.ConsentValue.GIVEN : z.user.ConsentValue.NOT_GIVEN;
-    return this.setConsent(z.user.ConsentType.MARKETING, consentValue).then(() => {
-      this.logger.log(`Marketing consent updated to ${consentValue}`);
-      this.marketingConsent(consentGiven);
     });
   }
 };

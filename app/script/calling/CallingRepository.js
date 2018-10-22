@@ -84,8 +84,8 @@ z.calling.CallingRepository = class CallingRepository {
     this.callLogger = new z.telemetry.calling.CallLogger(loggerName, null, z.config.LOGGER.OPTIONS, this.messageLog);
 
     this.selfUserId = ko.pureComputed(() => {
-      if (this.userRepository.self()) {
-        return this.userRepository.self().id;
+      if (this.userRepository.selfUser()) {
+        return this.userRepository.selfUser().id;
       }
     });
 
@@ -775,7 +775,7 @@ z.calling.CallingRepository = class CallingRepository {
       : Promise.resolve(remoteUser);
 
     return recipientsPromise.then(remoteUserEntity => {
-      const selfUserEntity = this.userRepository.self();
+      const selfUserEntity = this.userRepository.selfUser();
       let precondition;
       let recipients;
 
@@ -1419,7 +1419,7 @@ z.calling.CallingRepository = class CallingRepository {
     const {properties} = callMessageEntity;
 
     const direction = z.calling.enum.CALL_STATE.OUTGOING;
-    return this._createCall(callMessageEntity, this.userRepository.self(), direction).then(callEntity => {
+    return this._createCall(callMessageEntity, this.userRepository.selfUser(), direction).then(callEntity => {
       const mediaType = this._getMediaTypeFromProperties(properties);
       const conversationName = callEntity.conversationEntity.display_name();
       const conversationId = callEntity.conversationEntity.id;

@@ -50,17 +50,21 @@ z.viewModel.ListViewModel = class ListViewModel {
     this.onContextMenu = this.onContextMenu.bind(this);
 
     this.elementId = 'left-column';
-    this.conversationRepository = repositories.conversation;
-    this.teamRepository = repositories.team;
-    this.userRepository = repositories.user;
 
-    this.actionsViewModel = mainViewModel.actions;
-    this.contentViewModel = mainViewModel.content;
-    this.panelViewModel = mainViewModel.panel;
+    const {conversation, self, team, user} = repositories;
+    this.conversationRepository = conversation;
+    this.selfRepository = self;
+    this.teamRepository = team;
+    this.userRepository = user;
 
-    this.isActivatedAccount = this.userRepository.isActivatedAccount;
+    const {actions, content, panel} = mainViewModel;
+    this.actionsViewModel = actions;
+    this.contentViewModel = content;
+    this.panelViewModel = panel;
+
+    this.isActivatedAccount = this.selfRepository.isActivatedAccount;
     this.isProAccount = this.teamRepository.isTeam;
-    this.selfUser = this.userRepository.self;
+    this.selfUser = this.selfRepository.selfUser;
 
     this.logger = new z.util.Logger('z.viewModel.ListViewModel', z.config.LOGGER.OPTIONS);
 

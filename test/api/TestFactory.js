@@ -129,7 +129,7 @@ window.TestFactory.prototype.exposeBackupActors = function() {
         TestFactory.client_repository,
         TestFactory.connection_repository,
         TestFactory.conversation_repository,
-        TestFactory.user_repository
+        TestFactory.self_repository
       );
 
       return TestFactory.backup_repository;
@@ -226,7 +226,7 @@ window.TestFactory.prototype.exposeEventActors = function() {
   this.logger.info('- exposeEventActors');
   return Promise.resolve()
     .then(() => this.exposeCryptographyActors())
-    .then(() => this.exposeUserActors())
+    .then(() => this.exposeSelfActors())
     .then(() => {
       this.logger.info('✓ exposedCryptographyActors');
 
@@ -250,11 +250,29 @@ window.TestFactory.prototype.exposeEventActors = function() {
         TestFactory.conversation_service,
         TestFactory.cryptography_repository,
         TestFactory.serverTimeRepository,
-        TestFactory.user_repository
+        TestFactory.self_repository
       );
       TestFactory.event_repository.currentClient = ko.observable(TestFactory.cryptography_repository.currentClient());
 
       return TestFactory.event_repository;
+    });
+};
+
+/**
+ * @returns {Promise<z.self.SelfRepository>} The self repository.
+ */
+window.TestFactory.prototype.exposeSelfActors = function() {
+  this.logger.info('- exposeSelfActors');
+  return Promise.resolve()
+    .then(() => this.exposeClientActors())
+    .then(() => {
+      TestFactory.asset_service = new z.assets.AssetService(this.backendClient);
+      TestFactory.self_service = new z.self.SelfService(this.backendClient);
+
+      TestFactory.self_repository = new z.self.SelfRepository(TestFactory.self_service, TestFactory.asset_service);
+      TestFactory.self_repository.setSelfUser(TestFactory.client_repository.selfUser());
+
+      return TestFactory.user_repository;
     });
 };
 
@@ -265,21 +283,15 @@ window.TestFactory.prototype.exposeEventActors = function() {
 window.TestFactory.prototype.exposeUserActors = function() {
   this.logger.info('- exposeUserActors');
   return Promise.resolve()
-    .then(() => this.exposeClientActors())
     .then(() => this.exposeServerActors())
+    .then(() => this.exposeSelfActors())
     .then(() => {
-      this.logger.info('✓ exposedClientActors');
-
-      TestFactory.asset_service = new z.assets.AssetService(this.backendClient);
-      TestFactory.connection_service = new z.connection.ConnectionService(this.backendClient);
-      TestFactory.self_service = new z.self.SelfService(this.backendClient);
       TestFactory.user_service = new z.user.UserService(this.backendClient);
 
       TestFactory.user_repository = new z.user.UserRepository(
         TestFactory.user_service,
-        TestFactory.asset_service,
-        TestFactory.self_service,
         TestFactory.client_repository,
+        TestFactory.self_repository,
         TestFactory.serverTimeRepository
       );
       TestFactory.user_repository.save_user(TestFactory.client_repository.selfUser(), true);

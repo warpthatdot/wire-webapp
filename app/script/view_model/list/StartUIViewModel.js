@@ -44,29 +44,32 @@ z.viewModel.list.StartUIViewModel = class StartUIViewModel {
     this.clickOnContact = this.clickOnContact.bind(this);
     this.clickOnConversation = this.clickOnConversation.bind(this);
     this.clickOnOther = this.clickOnOther.bind(this);
-    this.clickToOpenService = this.clickToOpenService.bind(this);
 
     this.clickToAcceptInvite = this.clickToAcceptInvite.bind(this);
     this.clickToIgnoreInvite = this.clickToIgnoreInvite.bind(this);
     this.clickToSendRequest = this.clickToSendRequest.bind(this);
+    this.clickToOpenService = this.clickToOpenService.bind(this);
     this.clickToUnblock = this.clickToUnblock.bind(this);
 
     this.handleSearchInput = this.handleSearchInput.bind(this);
 
     this.mainViewModel = mainViewModel;
     this.listViewModel = listViewModel;
-    this.connectRepository = repositories.connect;
-    this.conversationRepository = repositories.conversation;
-    this.integrationRepository = repositories.integration;
-    this.propertiesRepository = repositories.properties;
-    this.searchRepository = repositories.search;
-    this.teamRepository = repositories.team;
-    this.userRepository = repositories.user;
+
+    const {connect, conversation, integration, properties, search, team, user} = repositories;
+    this.connectRepository = connect;
+    this.conversationRepository = conversation;
+    this.integrationRepository = integration;
+    this.propertiesRepository = properties;
+    this.searchRepository = search;
+    this.teamRepository = team;
+    this.userRepository = user;
+
     this.logger = new z.util.Logger('z.viewModel.list.StartUIViewModel', z.config.LOGGER.OPTIONS);
 
     this.actionsViewModel = this.mainViewModel.actions;
 
-    this.selfUser = this.userRepository.self;
+    this.selfUser = this.userRepository.selfUser;
 
     this.isTeam = this.teamRepository.isTeam;
     this.teamName = this.teamRepository.teamName;

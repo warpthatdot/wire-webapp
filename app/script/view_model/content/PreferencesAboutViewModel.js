@@ -27,8 +27,8 @@ z.viewModel.content.PreferencesAboutViewModel = class PreferencesAboutViewModel 
   constructor(mainViewModel, contentViewModel, repositories) {
     this.logger = new z.util.Logger('z.viewModel.content.PreferencesAboutViewModel', z.config.LOGGER.OPTIONS);
 
-    this.userRepository = repositories.user;
-    this.selfUser = this.userRepository.self;
+    const selfRepository = repositories.self;
+    this.selfUser = selfRepository.selfUser;
   }
 
   clickOnToU() {

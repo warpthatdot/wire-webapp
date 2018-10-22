@@ -66,7 +66,7 @@ z.broadcast.BroadcastRepository = class BroadcastRepository {
     return Promise.resolve().then(() => {
       const recipients = {};
 
-      for (const userEntity of this.userRepository.teamUsers().concat(this.userRepository.self())) {
+      for (const userEntity of this.userRepository.teamUsers().concat(this.userRepository.selfUser())) {
         recipients[userEntity.id] = userEntity.devices().map(clientEntity => clientEntity.id);
       }
 
@@ -120,7 +120,7 @@ z.broadcast.BroadcastRepository = class BroadcastRepository {
         return accumulator + userEntity.devices().length;
       }
       return accumulator + z.client.ClientRepository.CONFIG.AVERAGE_NUMBER_OF_CLIENTS;
-    }, this.userRepository.self().devices().length);
+    }, this.userRepository.selfUser().devices().length);
   }
 
   /**

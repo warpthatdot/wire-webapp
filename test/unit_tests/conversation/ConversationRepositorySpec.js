@@ -562,7 +562,7 @@ describe('ConversationRepository', () => {
       it('removes a file upload from the messages list of the sender when the upload gets canceled', () => {
         const conversation_id = z.util.createRandomUuid();
         const message_id = z.util.createRandomUuid();
-        const sending_user_id = TestFactory.user_repository.self().id;
+        const sending_user_id = TestFactory.user_repository.selfUser().id;
 
         // prettier-ignore
         const upload_start = {"conversation":conversation_id,"from":sending_user_id,"id":message_id,"status":1,"time":"2017-09-06T09:43:32.278Z","data":{"content_length":23089240,"content_type":"application/x-msdownload","info":{"name":"AirDroid_Desktop_Client_3.4.2.0.exe","nonce":"79072f78-15ee-4d54-a63c-fd46cd5607ae"}},"type":"conversation.asset-add","category":512,"primary_key":107};
@@ -626,7 +626,7 @@ describe('ConversationRepository', () => {
       it("shows a failed message on the sender's side if the upload fails", () => {
         const conversation_id = z.util.createRandomUuid();
         const message_id = z.util.createRandomUuid();
-        const sending_user_id = TestFactory.user_repository.self().id;
+        const sending_user_id = TestFactory.user_repository.selfUser().id;
 
         // prettier-ignore
         const upload_start = {"conversation":conversation_id,"from":sending_user_id,"id":message_id,"status":1,"time":"2017-09-06T09:43:32.278Z","data":{"content_length":23089240,"content_type":"application/x-msdownload","info":{"name":"AirDroid_Desktop_Client_3.4.2.0.exe","nonce":"79072f78-15ee-4d54-a63c-fd46cd5607ae"}},"type":"conversation.asset-add","category":512,"primary_key":107};
@@ -739,7 +739,7 @@ describe('ConversationRepository', () => {
         conversation_et = _generate_conversation(z.conversation.ConversationType.GROUP);
         return TestFactory.conversation_repository.save_conversation(conversation_et).then(() => {
           message_et = new z.entity.Message(z.util.createRandomUuid());
-          message_et.from = TestFactory.user_repository.self().id;
+          message_et.from = TestFactory.user_repository.selfUser().id;
           conversation_et.add_message(message_et);
 
           spyOn(TestFactory.conversation_repository, '_addDeleteMessage');
@@ -781,7 +781,7 @@ describe('ConversationRepository', () => {
           data: {
             message_id: message_et.id,
           },
-          from: TestFactory.user_repository.self().id,
+          from: TestFactory.user_repository.selfUser().id,
           id: z.util.createRandomUuid(),
           time: new Date().toISOString(),
           type: z.event.Client.CONVERSATION.MESSAGE_DELETE,
@@ -892,7 +892,7 @@ describe('ConversationRepository', () => {
             message_id: messageId,
             conversation_id: conversation_et.id,
           },
-          from: TestFactory.user_repository.self().id,
+          from: TestFactory.user_repository.selfUser().id,
           id: z.util.createRandomUuid(),
           time: new Date().toISOString(),
           type: z.event.Client.CONVERSATION.MESSAGE_HIDDEN,
@@ -913,7 +913,7 @@ describe('ConversationRepository', () => {
             message_id: messageId,
             conversation_id: conversation_et.id,
           },
-          from: TestFactory.user_repository.self().id,
+          from: TestFactory.user_repository.selfUser().id,
           id: z.util.createRandomUuid(),
           time: new Date().toISOString(),
           type: z.event.Client.CONVERSATION.MESSAGE_HIDDEN,
