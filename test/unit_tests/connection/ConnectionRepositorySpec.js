@@ -22,16 +22,18 @@
 'use strict';
 
 describe('z.connection.ConnectionRepository', () => {
-  let server = undefined;
-  let connectionRepository = undefined;
-  const testFactory = new TestFactory();
-
-  beforeAll(() => testFactory.exposeConnectionActors());
+  let connectionRepository;
+  let connectionSettings;
+  let server;
 
   beforeEach(() => {
-    connectionRepository = TestFactory.connection_repository;
-    server = sinon.fakeServer.create();
-    server.autoRespond = true;
+    return new TestFactory().exposeConnectionActors().then(({repository, settings}) => {
+      connectionRepository = repository.connection;
+      connectionSettings = settings.connection;
+
+      server = sinon.fakeServer.create();
+      server.autoRespond = true;
+    });
   });
 
   afterEach(() => {
@@ -40,7 +42,7 @@ describe('z.connection.ConnectionRepository', () => {
   });
 
   describe('cancelRequest', () => {
-    let userEntity = undefined;
+    let userEntity;
 
     beforeEach(() => {
       const userId = z.util.createRandomUuid();
@@ -96,21 +98,19 @@ describe('z.connection.ConnectionRepository', () => {
   });
 
   describe('getConnections', () => {
-    // [update 16/08/2018] flaky test reenabled (on probation). Could be removed if fails again
     it('should return the connected users', () => {
-      server.respondWith('GET', `${testFactory.settings.connection.restUrl}/connections?size=500`, [
+      const userId = entities.user.jane_roe.id;
+      server.respondWith('GET', `${connectionSettings.restUrl}/connections?size=500`, [
         200,
         {'Content-Type': 'application/json'},
         JSON.stringify(payload.connections.get),
       ]);
 
-      server.respondWith(
-        'GET',
-        `${testFactory.settings.connection.restUrl}/users?ids=${entities.user.jane_roe.id}%2C${
-          entities.user.jane_roe.id
-        }`,
-        [200, {'Content-Type': 'application/json'}, JSON.stringify(payload.users.get.many)]
-      );
+      server.respondWith('GET', `${connectionSettings.restUrl}/users?ids=${userId}%2C${entities.user.jane_roe.id}`, [
+        200,
+        {'Content-Type': 'application/json'},
+        JSON.stringify(payload.users.get.many),
+      ]);
 
       return connectionRepository.getConnections().then(() => {
         expect(connectionRepository.connectionEntities().length).toBe(2);
