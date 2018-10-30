@@ -78,6 +78,7 @@ z.event.EventRepository = class EventRepository {
     this.cryptographyRepository = cryptographyRepository;
     this.selfRepository = selfRepository;
     this.serverTimeRepository = serverTimeRepository;
+
     this.logger = new z.util.Logger('z.event.EventRepository', z.config.LOGGER.OPTIONS);
 
     this.currentClient = undefined;

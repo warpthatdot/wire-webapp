@@ -69,20 +69,19 @@ z.self.SelfRepository = class SelfRepository {
    * @returns {undefined} No return value
    */
   onUserEvent(eventJson, source) {
-    const {type} = eventJson;
-
-    const isSupportedEvent = SelfRepository.CONFIG.SUPPORTED_EVENTS.includes(type);
+    const eventType = eventJson.type;
+    const isSupportedEvent = SelfRepository.CONFIG.SUPPORTED_EVENTS.includes(eventType);
 
     if (isSupportedEvent) {
       const logObject = {eventJson: JSON.stringify(eventJson), eventObject: eventJson};
-      this.logger.info(`»» User Event: '${type}' (Source: ${source})`, logObject);
+      this.logger.info(`»» User Event: '${eventType}' (Source: ${source})`, logObject);
 
-      const isUserDeletion = type === z.event.Backend.USER.DELETE;
+      const isUserDeletion = eventType === z.event.Backend.USER.DELETE;
       if (isUserDeletion) {
         return this.onUserDelete(eventJson);
       }
 
-      const isUserUpdate = type === z.event.Backend.USER.UPDATE;
+      const isUserUpdate = eventType === z.event.Backend.USER.UPDATE;
       if (isUserUpdate) {
         return this.onUserUpdate(eventJson);
       }
@@ -125,7 +124,7 @@ z.self.SelfRepository = class SelfRepository {
   changeAccentColor(accentId) {
     return this.selfService
       .putSelf({accentId})
-      .then(() => this.user_update({user: {accent_id: accentId, id: this.selfUser().id}}));
+      .then(() => this.onUserUpdate({user: {accent_id: accentId, id: this.selfUser().id}}));
   }
 
   changeMarketingConsent(consentGiven) {
@@ -145,7 +144,7 @@ z.self.SelfRepository = class SelfRepository {
     const nameTooShort = name.length < SelfRepository.CONFIG.MINIMUM_NAME_LENGTH;
     return nameTooShort
       ? Promise.reject(new z.error.UserError(z.userUserError.TYPE.INVALID_UPDATE))
-      : this.selfService.putSelf({name}).then(() => this.user_update({user: {id: this.selfUser().id, name: name}}));
+      : this.selfService.putSelf({name}).then(() => this.onUserUpdate({user: {id: this.selfUser().id, name: name}}));
   }
 
   /**
@@ -183,7 +182,7 @@ z.self.SelfRepository = class SelfRepository {
         ];
         return this.selfService
           .putSelf({assets, picture: []})
-          .then(() => this.user_update({user: {assets, id: this.selfUser().id}}));
+          .then(() => this.onUserUpdate({user: {assets, id: this.selfUser().id}}));
       })
       .catch(error => {
         throw new Error(`Error during profile image upload: ${error.message || error.code || error}`);
@@ -204,15 +203,15 @@ z.self.SelfRepository = class SelfRepository {
     return this.selfService
       .putSelfHandle(username)
       .then(() => {
-        this.should_set_username = false;
-        return this.user_update({user: {handle: username, id: this.selfUser().id}});
+        this.shouldSetUsername = false;
+        return this.onUserUpdate({user: {handle: username, id: this.selfUser().id}});
       })
-      .catch(({code: error_code}) => {
+      .catch(({code: errorCode}) => {
         const usernameTakenErrors = [
           z.error.BackendClientError.STATUS_CODE.CONFLICT,
           z.error.BackendClientError.STATUS_CODE.BAD_REQUEST,
         ];
-        if (usernameTakenErrors.includes(error_code)) {
+        if (usernameTakenErrors.includes(errorCode)) {
           throw new z.error.UserError(z.error.UserError.TYPE.USERNAME_TAKEN);
         }
         throw new z.error.UserError(z.error.UserError.TYPE.REQUEST_FAILURE);

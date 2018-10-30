@@ -272,7 +272,7 @@ window.TestFactory.prototype.exposeSelfActors = function() {
       TestFactory.self_repository = new z.self.SelfRepository(TestFactory.self_service, TestFactory.asset_service);
       TestFactory.self_repository.setSelfUser(TestFactory.client_repository.selfUser());
 
-      return TestFactory.user_repository;
+      return TestFactory.self_repository;
     });
 };
 
@@ -294,7 +294,6 @@ window.TestFactory.prototype.exposeUserActors = function() {
         TestFactory.self_repository,
         TestFactory.serverTimeRepository
       );
-      TestFactory.user_repository.save_user(TestFactory.client_repository.selfUser(), true);
 
       return TestFactory.user_repository;
     });

@@ -23,6 +23,12 @@ window.z = window.z || {};
 window.z.user = z.user || {};
 
 z.user.UserRepository = class UserRepository {
+  static get CONFIG() {
+    return {
+      SUPPORTED_EVENTS: [z.event.Backend.USER.AVAILABILITY, z.event.Backend.USER.DELETE, z.event.Backend.USER.UPDATE],
+    };
+  }
+
   /**
    * Construct a new User repository.
    * @class z.user.UserRepository
@@ -71,7 +77,7 @@ z.user.UserRepository = class UserRepository {
     amplify.subscribe(z.event.WebApp.CLIENT.ADD, this.addClientToUser.bind(this));
     amplify.subscribe(z.event.WebApp.CLIENT.REMOVE, this.remove_client_from_user.bind(this));
     amplify.subscribe(z.event.WebApp.CLIENT.UPDATE, this.update_clients_from_user.bind(this));
-    amplify.subscribe(z.event.WebApp.USER.EVENT_FROM_BACKEND, this.on_user_event.bind(this));
+    amplify.subscribe(z.event.WebApp.USER.EVENT_FROM_BACKEND, this.onUserEvent.bind(this));
     amplify.subscribe(z.event.WebApp.USER.PERSIST, this.saveUserInDb.bind(this));
     amplify.subscribe(z.event.WebApp.USER.UPDATE, this.updateUserById.bind(this));
   }
@@ -79,27 +85,32 @@ z.user.UserRepository = class UserRepository {
   /**
    * Listener for incoming user events.
    *
-   * @param {Object} event_json - JSON data for event
+   * @param {Object} eventJson - JSON data for event
    * @param {z.event.EventRepository.SOURCE} source - Source of event
    * @returns {undefined} No return value
    */
-  on_user_event(event_json, source) {
-    const {type} = event_json;
+  onUserEvent(eventJson, source) {
+    const eventType = eventJson.type;
+    const isSupportedEvent = UserRepository.CONFIG.SUPPORTED_EVENTS.includes(eventType);
 
-    const logObject = {eventJson: JSON.stringify(event_json), eventObject: event_json};
-    this.logger.info(`»» User Event: '${type}' (Source: ${source})`, logObject);
+    if (isSupportedEvent) {
+      const logObject = {eventJson: JSON.stringify(eventJson), eventObject: eventJson};
+      this.logger.info(`»» User Event: '${eventType}' (Source: ${source})`, logObject);
 
-    switch (type) {
-      case z.event.Backend.USER.DELETE:
-        this.onUserDelete(event_json);
-        break;
-      case z.event.Backend.USER.UPDATE:
-        this.user_update(event_json);
-        break;
-      case z.event.Client.USER.AVAILABILITY:
-        this.onUserAvailability(event_json);
-        break;
-      default:
+      const isUserAvailability = eventType === z.event.Backend.USER.AVAILABILITY;
+      if (isUserAvailability) {
+        return this.onUserAvailability(eventJson);
+      }
+
+      const isUserDelete = eventType === z.event.Backend.USER.DELETE;
+      if (isUserDelete) {
+        return this.onUserDelete(eventJson);
+      }
+
+      const isUserUpdate = eventType === z.event.Backend.USER.UPDATE;
+      if (isUserUpdate) {
+        return this.onUserUpdate(eventJson);
+      }
     }
   }
 
@@ -132,18 +143,6 @@ z.user.UserRepository = class UserRepository {
   }
 
   /**
-   * Event to delete the matching user.
-   * @param {string} id - User ID of deleted user
-   * @returns {undefined} No return value
-   */
-  onUserDelete({id: userId}) {
-    const isSelfUser = userId === this.self().id;
-    if (!isSelfUser) {
-      this.logger.info(`Remote user '${userId}' was deleted`);
-    }
-  }
-
-  /**
    * Event to update availability of user.
    * @param {Object} event - Event data
    * @returns {undefined} No return value
@@ -159,12 +158,24 @@ z.user.UserRepository = class UserRepository {
   }
 
   /**
+   * Event to delete the matching user.
+   * @param {string} id - User ID of deleted user
+   * @returns {undefined} No return value
+   */
+  onUserDelete({id: userId}) {
+    const isSelfUser = userId === this.selfUser().id;
+    if (!isSelfUser) {
+      this.logger.info(`Remote user '${userId}' was deleted`);
+    }
+  }
+
+  /**
    * Event to update the matching user.
    * @param {Object} user - Update user info
    * @returns {Promise} Resolves wit the updated user entity
    */
   onUserUpdate({user: userData}) {
-    const isSelfUser = userData.id === this.self().id;
+    const isSelfUser = userData.id === this.selfUser().id;
     if (!isSelfUser) {
       return this.get_user_by_id(userData.id).then(userEntity => {
         return this.user_mapper.updateUserFromObject(userEntity, userData);
@@ -414,24 +425,18 @@ z.user.UserRepository = class UserRepository {
     if (!_.isString(user_id)) {
       user_id = user_id.id;
     }
-    return this.sel().id === user_id;
+    return this.selfUser().id === user_id;
   }
 
   /**
    * Is the user the logged in user.
    * @param {z.entity.User|string} user_et - User entity or user ID
-   * @param {boolean} is_me - True, if self user
    * @returns {Promise} Resolves with the user entity
    */
-  save_user(user_et, is_me = false) {
+  save_user(user_et) {
     return this.findUserById(user_et.id).catch(error => {
       if (error.type !== z.error.UserError.TYPE.USER_NOT_FOUND) {
         throw error;
-      }
-
-      if (is_me) {
-        user_et.is_me = true;
-        this.selfUser(user_et);
       }
       this.users.push(user_et);
       return user_et;
@@ -517,12 +522,12 @@ z.user.UserRepository = class UserRepository {
 
     return Promise.resolve()
       .then(() => {
-        suggestions = z.user.UserHandleGenerator.create_suggestions(this.self().name());
+        suggestions = z.user.UserHandleGenerator.create_suggestions(this.selfUser().name());
         return this.verify_usernames(suggestions);
       })
-      .then(valid_suggestions => {
+      .then(([validSuggestion]) => {
         this.should_set_username = true;
-        this.self().username(valid_suggestions[0]);
+        this.selfUser().username(validSuggestion);
       })
       .catch(error => {
         if (error.code === z.error.BackendClientError.STATUS_CODE.NOT_FOUND) {
