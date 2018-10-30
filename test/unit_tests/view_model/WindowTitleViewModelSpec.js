@@ -23,13 +23,10 @@
 
 describe('z.viewModel.WindowTitleViewModel', () => {
   const suffix = z.l10n.text(z.string.wire);
-  let test_factory = undefined;
   let title_view_model = undefined;
 
   beforeEach(() => {
-    test_factory = new TestFactory();
-
-    return test_factory.exposeConversationActors().then(conversationRepository => {
+    return new TestFactory().exposeConversationActors().then(({repository}) => {
       title_view_model = new z.viewModel.WindowTitleViewModel(
         {
           content: {
@@ -37,8 +34,8 @@ describe('z.viewModel.WindowTitleViewModel', () => {
           },
         },
         {
-          conversation: conversationRepository,
-          user: TestFactory.user_repository,
+          conversation: repository.conversation,
+          user: repository.user,
         }
       );
     });

@@ -34,17 +34,19 @@ const messages = [
 /* eslint-enable comma-spacing, key-spacing, sort-keys, quotes */
 
 describe('z.backup.BackupRepository', () => {
-  const test_factory = new TestFactory();
-  let backupRepository = undefined;
+  let backupRepository;
+  let storageService;
 
   beforeEach(() => {
-    jasmine.clock().install();
-    return test_factory.exposeBackupActors().then(() => (backupRepository = TestFactory.backup_repository));
+    return new TestFactory().exposeBackupActors().then(({repository, service}) => {
+      backupRepository = repository.backup;
+      storageService = service.storage;
+
+      jasmine.clock().install();
+    });
   });
 
   afterEach(() => jasmine.clock().uninstall());
-
-  afterAll(() => jasmine.clock().uninstall());
 
   describe('createMetaData', () => {
     it('creates backup metadata', () => {
@@ -53,11 +55,11 @@ describe('z.backup.BackupRepository', () => {
 
       const metaDescription = backupRepository.createMetaData();
 
-      expect(metaDescription.client_id).toBe(TestFactory.client_repository.currentClient().id);
+      expect(metaDescription.client_id).toBe(backupRepository.clientRepository.currentClient().id);
       expect(metaDescription.creation_time).toBe(freezedTime.toISOString());
       expect(metaDescription.platform).toBe('Web');
-      expect(metaDescription.user_id).toBe(TestFactory.user_repository.self().id);
-      expect(metaDescription.version).toBe(TestFactory.backup_service.getDatabaseVersion());
+      expect(metaDescription.user_id).toBe(backupRepository.userRepository.self().id);
+      expect(metaDescription.version).toBe(backupRepository.backupService.getDatabaseVersion());
     });
   });
 
@@ -66,12 +68,12 @@ describe('z.backup.BackupRepository', () => {
 
     beforeEach(() => {
       return Promise.all([
-        ...messages.map(message => TestFactory.storage_service.save(eventStoreName, undefined, message)),
-        TestFactory.storage_service.save('conversations', conversationId, conversation),
+        ...messages.map(message => storageService.save(eventStoreName, undefined, message)),
+        storageService.save('conversations', conversationId, conversation),
       ]);
     });
 
-    afterEach(() => TestFactory.storage_service.clearStores());
+    afterEach(() => storageService.clearStores());
 
     it('generates an archive of the database', () => {
       const filesToCheck = [
@@ -111,7 +113,7 @@ describe('z.backup.BackupRepository', () => {
         type: z.event.Client.CONVERSATION.VERIFICATION,
       };
 
-      return TestFactory.storage_service
+      return storageService
         .save(z.storage.StorageSchemata.OBJECT_STORE.EVENTS, undefined, verificationEvent)
         .then(() => {
           const archivePromise = backupRepository.generateHistory(noop);
@@ -146,8 +148,8 @@ describe('z.backup.BackupRepository', () => {
     });
   });
 
-  describe('importHistory', () => {
-    it('fails if metadata doesn´t match', () => {
+  describe('"importHistory"', () => {
+    it("fails if metadata don't match", () => {
       const tests = [
         {
           expectedError: z.backup.DifferentAccountError,
@@ -196,7 +198,7 @@ describe('z.backup.BackupRepository', () => {
       archive.file(z.backup.BackupRepository.CONFIG.FILENAME.EVENTS, JSON.stringify(messages));
 
       return backupRepository.importHistory(archive, noop, noop).then(() => {
-        const conversationsTest = TestFactory.storage_service
+        const conversationsTest = storageService
           .getAll(z.storage.StorageSchemata.OBJECT_STORE.CONVERSATIONS)
           .then(conversationsData => {
             expect(conversationsData.length).toEqual(1);
@@ -206,12 +208,10 @@ describe('z.backup.BackupRepository', () => {
             expect(conversationData.id).toEqual(conversation.id);
           });
 
-        const eventsTest = TestFactory.storage_service
-          .getAll(z.storage.StorageSchemata.OBJECT_STORE.EVENTS)
-          .then(events => {
-            expect(events.length).toEqual(messages.length);
-            expect(events.map(removePrimaryKey)).toEqual(messages.map(removePrimaryKey));
-          });
+        const eventsTest = storageService.getAll(z.storage.StorageSchemata.OBJECT_STORE.EVENTS).then(events => {
+          expect(events.length).toEqual(messages.length);
+          expect(events.map(removePrimaryKey)).toEqual(messages.map(removePrimaryKey));
+        });
 
         return Promise.all([conversationsTest, eventsTest]);
 

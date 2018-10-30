@@ -22,12 +22,15 @@
 'use strict';
 
 describe('z.cryptography.CryptographyRepository', () => {
-  const test_factory = new TestFactory();
+  let cryptographyRepository;
 
   beforeAll(() => {
     return z.util.protobuf
       .loadProtos('ext/proto/@wireapp/protocol-messaging/messages.proto')
-      .then(() => test_factory.exposeCryptographyActors(false));
+      .then(() => new TestFactory().exposeCryptographyActors(false))
+      .then(({repository}) => {
+        cryptographyRepository = repository.cryptography;
+      });
   });
 
   describe('encryptGenericMessage', () => {
@@ -52,7 +55,7 @@ describe('z.cryptography.CryptographyRepository', () => {
     });
 
     it('encrypts a generic message', () => {
-      spyOn(TestFactory.cryptography_service, 'getUsersPreKeys').and.callFake(recipients =>
+      spyOn(cryptographyRepository.cryptographyService, 'getUsersPreKeys').and.callFake(recipients =>
         Promise.resolve().then(() => {
           const prekey_map = {};
 
@@ -83,7 +86,7 @@ describe('z.cryptography.CryptographyRepository', () => {
       recipients[john_doe.id] = [john_doe.clients.phone_id, john_doe.clients.desktop_id];
       recipients[jane_roe.id] = [jane_roe.clients.phone_id];
 
-      return TestFactory.cryptography_repository.encryptGenericMessage(recipients, generic_message).then(payload => {
+      return cryptographyRepository.encryptGenericMessage(recipients, generic_message).then(payload => {
         expect(payload.recipients).toBeTruthy();
         expect(Object.keys(payload.recipients).length).toBe(2);
         expect(Object.keys(payload.recipients[john_doe.id]).length).toBe(2);
@@ -100,8 +103,8 @@ describe('z.cryptography.CryptographyRepository', () => {
 
     it('detects duplicated messages', async done => {
       const database = TestFactory.storage_service.db;
-      const preKeys = await TestFactory.cryptography_repository.createCryptobox(database);
-      const alice = TestFactory.cryptography_repository.cryptobox.identity;
+      const preKeys = await cryptographyRepository.createCryptobox(database);
+      const alice = cryptographyRepository.cryptobox.identity;
 
       expect(alice).toBeDefined();
 
@@ -133,12 +136,12 @@ describe('z.cryptography.CryptographyRepository', () => {
         id: z.util.createRandomUuid(),
       };
 
-      const decrypted = await TestFactory.cryptography_repository.handleEncryptedEvent(mockedEvent);
+      const decrypted = await cryptographyRepository.handleEncryptedEvent(mockedEvent);
 
       expect(decrypted.data.content).toBe(plainText);
 
       try {
-        await TestFactory.cryptography_repository.handleEncryptedEvent(mockedEvent);
+        await cryptographyRepository.handleEncryptedEvent(mockedEvent);
       } catch (error) {
         expect(error.type).toBe(z.error.CryptographyError.TYPE.UNHANDLED_TYPE);
       }
@@ -157,7 +160,7 @@ describe('z.cryptography.CryptographyRepository', () => {
       };
       /* eslint-enable comma-spacing, key-spacing, sort-keys, quotes */
 
-      return TestFactory.cryptography_repository.handleEncryptedEvent(event).then(mapped_event => {
+      return cryptographyRepository.handleEncryptedEvent(event).then(mapped_event => {
         expect(mapped_event.type).toBe(z.event.Client.CONVERSATION.UNABLE_TO_DECRYPT);
       });
     });
@@ -175,7 +178,7 @@ describe('z.cryptography.CryptographyRepository', () => {
       };
       /* eslint-enable comma-spacing, key-spacing, sort-keys, quotes */
 
-      return TestFactory.cryptography_repository.handleEncryptedEvent(event).then(mapped_event => {
+      return cryptographyRepository.handleEncryptedEvent(event).then(mapped_event => {
         expect(mapped_event.type).toBe(z.event.Client.CONVERSATION.INCOMING_MESSAGE_TOO_BIG);
       });
     });
@@ -193,7 +196,7 @@ describe('z.cryptography.CryptographyRepository', () => {
       };
       /* eslint-enable comma-spacing, key-spacing, sort-keys, quotes */
 
-      return TestFactory.cryptography_repository.handleEncryptedEvent(event).then(mapped_event => {
+      return cryptographyRepository.handleEncryptedEvent(event).then(mapped_event => {
         expect(mapped_event.type).toBe(z.event.Client.CONVERSATION.INCOMING_MESSAGE_TOO_BIG);
       });
     });

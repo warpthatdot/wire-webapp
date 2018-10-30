@@ -20,15 +20,13 @@
 // grunt test_init && grunt test_run:event/preprocessor/ServiceMiddleware
 
 describe('z.event.preprocessor.ServiceMiddleware', () => {
-  const testFactory = new TestFactory();
   let serviceMiddleware;
+  let repositories;
 
   beforeEach(() => {
-    return testFactory.exposeConversationActors().then(() => {
-      serviceMiddleware = new z.event.preprocessor.ServiceMiddleware(
-        TestFactory.conversation_repository,
-        TestFactory.user_repository
-      );
+    return new TestFactory().exposeConversationActors().then(({repository}) => {
+      repositories = repository;
+      serviceMiddleware = new z.event.preprocessor.ServiceMiddleware(repository.conversation, repository.user);
     });
   });
 
@@ -43,7 +41,7 @@ describe('z.event.preprocessor.ServiceMiddleware', () => {
         };
 
         const userEntities = [{}, {isService: true}];
-        spyOn(TestFactory.user_repository, 'get_users_by_id').and.returnValue(Promise.resolve(userEntities));
+        spyOn(repositories.user, 'get_users_by_id').and.returnValue(Promise.resolve(userEntities));
 
         return serviceMiddleware.processEvent(event).then(decoratedEvent => {
           expect(decoratedEvent.data.has_service).toBe(true);
@@ -58,13 +56,11 @@ describe('z.event.preprocessor.ServiceMiddleware', () => {
           type: z.event.Backend.CONVERSATION.MEMBER_JOIN,
         };
 
-        spyOn(TestFactory.user_repository, 'self').and.returnValue({id: 'self-id'});
+        spyOn(repositories.user, 'self').and.returnValue({id: 'self-id'});
         const conversation = new z.entity.Conversation();
-        spyOn(TestFactory.conversation_repository, 'get_conversation_by_id').and.returnValue(
-          Promise.resolve(conversation)
-        );
+        spyOn(repositories.conversation, 'get_conversation_by_id').and.returnValue(Promise.resolve(conversation));
         const userEntities = [{}, {isService: true}];
-        spyOn(TestFactory.user_repository, 'get_users_by_id').and.returnValue(Promise.resolve(userEntities));
+        spyOn(repositories.user, 'get_users_by_id').and.returnValue(Promise.resolve(userEntities));
 
         return serviceMiddleware.processEvent(event).then(decoratedEvent => {
           expect(decoratedEvent.data.has_service).toBe(true);
@@ -79,7 +75,7 @@ describe('z.event.preprocessor.ServiceMiddleware', () => {
           type: z.event.Backend.CONVERSATION.MEMBER_JOIN,
         };
 
-        spyOn(TestFactory.user_repository, 'get_users_by_id').and.returnValue(Promise.resolve([{}, {}]));
+        spyOn(repositories.user, 'get_users_by_id').and.returnValue(Promise.resolve([{}, {}]));
 
         return serviceMiddleware.processEvent(event).then(decoratedEvent => {
           expect(decoratedEvent.data.has_service).not.toBeDefined();
@@ -97,7 +93,7 @@ describe('z.event.preprocessor.ServiceMiddleware', () => {
         };
 
         const userEntities = [{}, {isService: true}];
-        spyOn(TestFactory.user_repository, 'get_users_by_id').and.returnValue(Promise.resolve(userEntities));
+        spyOn(repositories.user, 'get_users_by_id').and.returnValue(Promise.resolve(userEntities));
 
         return serviceMiddleware.processEvent(event).then(decoratedEvent => {
           expect(decoratedEvent.data.has_service).toBe(true);
@@ -113,7 +109,7 @@ describe('z.event.preprocessor.ServiceMiddleware', () => {
         };
 
         const userEntities = [{}, {}];
-        spyOn(TestFactory.user_repository, 'get_users_by_id').and.returnValue(Promise.resolve(userEntities));
+        spyOn(repositories.user, 'get_users_by_id').and.returnValue(Promise.resolve(userEntities));
 
         return serviceMiddleware.processEvent(event).then(decoratedEvent => {
           expect(decoratedEvent.data.has_service).not.toBeDefined();

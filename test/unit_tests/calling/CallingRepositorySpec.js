@@ -22,13 +22,12 @@
 // grunt test_init && grunt test_run:calling/CallingRepository
 
 describe('z.calling.CallingRepository', () => {
-  const testFactory = new TestFactory();
   let callingRepository;
 
   beforeEach(() => {
-    return testFactory
-      .exposeCallingActors()
-      .then(injectedCallingRepository => (callingRepository = injectedCallingRepository));
+    return new TestFactory().exposeCallingActors().then(({repository}) => {
+      callingRepository = repository.calling;
+    });
   });
 
   describe('toggleMedia', () => {

@@ -22,27 +22,29 @@
 'use strict';
 
 describe('z.connect.ConnectGoogleService', () => {
-  const test_factory = new TestFactory();
+  let connectGoogleService;
 
-  beforeAll(() => test_factory.exposeConnectActors());
+  beforeAll(() => {
+    return new TestFactory().exposeConnectActors().then(({service}) => {
+      connectGoogleService = service.connectGoogle;
+    });
+  });
 
   describe('getContacts', () => {
-    const access_token = 'access_token';
-
     beforeEach(() => {
-      spyOn(TestFactory.connectGoogleService, '_initLibrary').and.callThrough();
-      spyOn(TestFactory.connectGoogleService, '_loadLibrary').and.returnValue(Promise.resolve());
-      spyOn(TestFactory.connectGoogleService, '_getContacts').and.returnValue(Promise.resolve());
+      spyOn(connectGoogleService, '_initLibrary').and.callThrough();
+      spyOn(connectGoogleService, '_loadLibrary').and.returnValue(Promise.resolve());
+      spyOn(connectGoogleService, '_getContacts').and.returnValue(Promise.resolve());
     });
 
     it('initializes the authentication library if previously was not', () => {
-      spyOn(TestFactory.connectGoogleService, '_getAccessToken').and.returnValue(Promise.resolve());
+      spyOn(connectGoogleService, '_getAccessToken').and.returnValue(Promise.resolve());
 
-      return TestFactory.connectGoogleService.getContacts().then(() => {
-        expect(TestFactory.connectGoogleService._initLibrary).toHaveBeenCalled();
-        expect(TestFactory.connectGoogleService._loadLibrary).toHaveBeenCalled();
-        expect(TestFactory.connectGoogleService._getAccessToken).toHaveBeenCalled();
-        expect(TestFactory.connectGoogleService._getContacts).toHaveBeenCalled();
+      return connectGoogleService.getContacts().then(() => {
+        expect(connectGoogleService._initLibrary).toHaveBeenCalled();
+        expect(connectGoogleService._loadLibrary).toHaveBeenCalled();
+        expect(connectGoogleService._getAccessToken).toHaveBeenCalled();
+        expect(connectGoogleService._getContacts).toHaveBeenCalled();
       });
     });
 
@@ -55,17 +57,17 @@ describe('z.connect.ConnectGoogleService', () => {
         },
       };
 
-      spyOn(TestFactory.connectGoogleService, '_getAccessToken').and.callThrough();
+      spyOn(connectGoogleService, '_getAccessToken').and.callThrough();
       spyOn(window.gapi.auth, 'getToken').and.callThrough();
-      spyOn(TestFactory.connectGoogleService, '_authenticate').and.returnValue(Promise.resolve());
+      spyOn(connectGoogleService, '_authenticate').and.returnValue(Promise.resolve());
 
-      return TestFactory.connectGoogleService.getContacts().then(() => {
-        expect(TestFactory.connectGoogleService._initLibrary).toHaveBeenCalled();
-        expect(TestFactory.connectGoogleService._loadLibrary).not.toHaveBeenCalled();
-        expect(TestFactory.connectGoogleService._getAccessToken).toHaveBeenCalled();
+      return connectGoogleService.getContacts().then(() => {
+        expect(connectGoogleService._initLibrary).toHaveBeenCalled();
+        expect(connectGoogleService._loadLibrary).not.toHaveBeenCalled();
+        expect(connectGoogleService._getAccessToken).toHaveBeenCalled();
         expect(window.gapi.auth.getToken).toHaveBeenCalled();
-        expect(TestFactory.connectGoogleService._authenticate).toHaveBeenCalled();
-        expect(TestFactory.connectGoogleService._getContacts).toHaveBeenCalled();
+        expect(connectGoogleService._authenticate).toHaveBeenCalled();
+        expect(connectGoogleService._getContacts).toHaveBeenCalled();
       });
     });
 
@@ -73,22 +75,22 @@ describe('z.connect.ConnectGoogleService', () => {
       window.gapi = {
         auth: {
           getToken() {
-            return {access_token};
+            return {accessToken: 'accessToken'};
           },
         },
       };
 
-      spyOn(TestFactory.connectGoogleService, '_getAccessToken').and.callThrough();
+      spyOn(connectGoogleService, '_getAccessToken').and.callThrough();
       spyOn(window.gapi.auth, 'getToken').and.callThrough();
-      spyOn(TestFactory.connectGoogleService, '_authenticate');
+      spyOn(connectGoogleService, '_authenticate');
 
-      return TestFactory.connectGoogleService.getContacts().then(() => {
-        expect(TestFactory.connectGoogleService._initLibrary).toHaveBeenCalled();
-        expect(TestFactory.connectGoogleService._loadLibrary).not.toHaveBeenCalled();
-        expect(TestFactory.connectGoogleService._getAccessToken).toHaveBeenCalled();
+      return connectGoogleService.getContacts().then(() => {
+        expect(connectGoogleService._initLibrary).toHaveBeenCalled();
+        expect(connectGoogleService._loadLibrary).not.toHaveBeenCalled();
+        expect(connectGoogleService._getAccessToken).toHaveBeenCalled();
         expect(window.gapi.auth.getToken).toHaveBeenCalled();
-        expect(TestFactory.connectGoogleService._authenticate).not.toHaveBeenCalled();
-        expect(TestFactory.connectGoogleService._getContacts).toHaveBeenCalled();
+        expect(connectGoogleService._authenticate).not.toHaveBeenCalled();
+        expect(connectGoogleService._getContacts).toHaveBeenCalled();
       });
     });
   });

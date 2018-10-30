@@ -22,19 +22,26 @@
 // grunt test_init && grunt test_run:view_model/InputBarViewModel
 
 describe('z.viewModel.content.InputBarViewModel', () => {
-  const testFactory = new TestFactory();
+  let repositories;
   let viewModel;
 
-  beforeAll(() => testFactory.exposeSearchActors().then(() => testFactory.exposeConversationActors()));
+  beforeAll(() => {
+    return new TestFactory()
+      .exposeSearchActors()
+      .then(testFactory => testFactory.exposeConversationActors())
+      .then(({repository}) => {
+        repositories = repository;
+      });
+  });
 
   beforeEach(() => {
     viewModel = new z.viewModel.content.InputBarViewModel(
       undefined,
       {},
       {
-        conversation: TestFactory.conversation_repository,
-        search: TestFactory.search_repository,
-        user: TestFactory.user_repository,
+        conversation: repositories.conversation,
+        search: repositories.search,
+        user: repositories.user,
       }
     );
   });

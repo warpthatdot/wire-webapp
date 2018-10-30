@@ -71,9 +71,9 @@ z.conversation.ConversationRepository = class ConversationRepository {
     team_repository,
     user_repository
   ) {
+    this.conversation_service = conversation_service;
     this.eventRepository = eventRepository;
     this.eventService = eventRepository.eventService;
-    this.conversation_service = conversation_service;
     this.asset_service = asset_service;
     this.client_repository = client_repository;
     this.connectionRepository = connectionRepository;

@@ -147,7 +147,7 @@ class TestFactory {
         this.service.calling = new z.calling.CallingService(this.backendClient);
 
         this.repository.calling = new z.calling.CallingRepository(
-          this.servicecalling,
+          this.service.calling,
           this.repository.client,
           this.repository.conversation,
           this.repository.event,
@@ -379,7 +379,7 @@ class TestFactory {
       return Promise.resolve(this);
     }
 
-    return Promise.exposeAudioActors().then(() => {
+    return this.exposeAudioActors().then(() => {
       this.repository.media = new z.media.MediaRepository(this.repository.audio);
 
       this.logger.info('✓ instantiated media actors');

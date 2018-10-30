@@ -25,7 +25,8 @@ window.wire = window.wire || {};
 window.wire.app = window.wire.app || {};
 
 describe('z.notification.NotificationRepository', () => {
-  const test_factory = new TestFactory();
+  let notificationRepository;
+
   let conversation_et = null;
   let message_et = null;
   let user_et = null;
@@ -38,12 +39,16 @@ describe('z.notification.NotificationRepository', () => {
   let notification_content = null;
 
   beforeEach(() => {
-    return test_factory.exposeNotificationActors().then(() => {
+    return new TestFactory().exposeNotificationActors().then(({repository}) => {
+      notificationRepository = repository.notification;
+
       amplify.publish(z.event.WebApp.EVENT.NOTIFICATION_HANDLING_STATE, z.event.NOTIFICATION_HANDLING_STATE.WEB_SOCKET);
 
       // Create entities
-      const conversationMapper = TestFactory.conversation_repository.conversationMapper;
-      user_et = TestFactory.user_repository.user_mapper.map_user_from_object(payload.users.get.one[0]);
+      const userMapper = repository.user.user_mapper;
+      user_et = userMapper.map_user_from_object(payload.users.get.one[0]);
+
+      const conversationMapper = repository.conversation.conversationMapper;
       [conversation_et] = conversationMapper.mapConversations([entities.conversation]);
       conversation_et.team_id = undefined;
       const selfUserEntity = new z.entity.User(z.util.createRandomUuid());
@@ -69,7 +74,7 @@ describe('z.notification.NotificationRepository', () => {
 
       // Mocks
       document.hasFocus = () => false;
-      TestFactory.notification_repository.permissionState(z.permission.PermissionStatusState.GRANTED);
+      notificationRepository.permissionState(z.permission.PermissionStatusState.GRANTED);
       z.util.Environment.browser.supports.notifications = true;
       window.wire.app = {
         service: {
@@ -87,14 +92,14 @@ describe('z.notification.NotificationRepository', () => {
         },
       };
 
-      spyOn(TestFactory.notification_repository, '_showNotification');
-      spyOn(TestFactory.notification_repository, '_notifySound');
+      spyOn(notificationRepository, '_showNotification');
+      spyOn(notificationRepository, '_notifySound');
 
       verify_notification = (_conversation, _message, _expected_body) => {
-        return TestFactory.notification_repository.notify(_message, undefined, _conversation).then(() => {
-          expect(TestFactory.notification_repository._showNotification).toHaveBeenCalledTimes(1);
+        return notificationRepository.notify(_message, undefined, _conversation).then(() => {
+          expect(notificationRepository._showNotification).toHaveBeenCalledTimes(1);
 
-          const trigger = TestFactory.notification_repository._createTrigger(message_et, null, conversation_et);
+          const trigger = notificationRepository._createTrigger(message_et, null, conversation_et);
           notification_content.options.body = _expected_body;
           notification_content.options.data.messageType = _message.type;
           notification_content.trigger = trigger;
@@ -108,33 +113,33 @@ describe('z.notification.NotificationRepository', () => {
             notification_content.title = '…';
           }
 
-          const [firstResultArgs] = TestFactory.notification_repository._showNotification.calls.first().args;
+          const [firstResultArgs] = notificationRepository._showNotification.calls.first().args;
 
           expect(JSON.stringify(firstResultArgs)).toEqual(JSON.stringify(notification_content));
         });
       };
 
       verify_notification_ephemeral = (_conversation, _message) => {
-        return TestFactory.notification_repository.notify(_message, undefined, _conversation).then(() => {
-          expect(TestFactory.notification_repository._showNotification).toHaveBeenCalledTimes(1);
+        return notificationRepository.notify(_message, undefined, _conversation).then(() => {
+          expect(notificationRepository._showNotification).toHaveBeenCalledTimes(1);
 
-          const trigger = TestFactory.notification_repository._createTrigger(message_et, null, conversation_et);
+          const trigger = notificationRepository._createTrigger(message_et, null, conversation_et);
           notification_content.options.body = z.string.notificationObfuscated;
           notification_content.options.data.messageType = _message.type;
           notification_content.title = z.string.notificationObfuscatedTitle;
           notification_content.trigger = trigger;
 
-          const [firstResultArgs] = TestFactory.notification_repository._showNotification.calls.first().args;
+          const [firstResultArgs] = notificationRepository._showNotification.calls.first().args;
 
           expect(JSON.stringify(firstResultArgs)).toEqual(JSON.stringify(notification_content));
         });
       };
 
       verify_notification_obfuscated = (_conversation, _message, _setting) => {
-        return TestFactory.notification_repository.notify(_message, undefined, _conversation).then(() => {
-          expect(TestFactory.notification_repository._showNotification).toHaveBeenCalledTimes(1);
+        return notificationRepository.notify(_message, undefined, _conversation).then(() => {
+          expect(notificationRepository._showNotification).toHaveBeenCalledTimes(1);
 
-          const trigger = TestFactory.notification_repository._createTrigger(message_et, null, conversation_et);
+          const trigger = notificationRepository._createTrigger(message_et, null, conversation_et);
           notification_content.trigger = trigger;
 
           const obfuscateMessage = _setting === z.notification.NotificationPreference.OBFUSCATE_MESSAGE;
@@ -150,17 +155,17 @@ describe('z.notification.NotificationRepository', () => {
           }
           notification_content.options.data.messageType = _message.type;
 
-          const [firstResultArgs] = TestFactory.notification_repository._showNotification.calls.first().args;
+          const [firstResultArgs] = notificationRepository._showNotification.calls.first().args;
 
           expect(JSON.stringify(firstResultArgs)).toEqual(JSON.stringify(notification_content));
         });
       };
 
       verify_notification_system = (_conversation, _message, _expected_body, _expected_title) => {
-        return TestFactory.notification_repository.notify(_message, undefined, _conversation).then(() => {
-          expect(TestFactory.notification_repository._showNotification).toHaveBeenCalledTimes(1);
+        return notificationRepository.notify(_message, undefined, _conversation).then(() => {
+          expect(notificationRepository._showNotification).toHaveBeenCalledTimes(1);
 
-          const trigger = TestFactory.notification_repository._createTrigger(message_et, null, conversation_et);
+          const trigger = notificationRepository._createTrigger(message_et, null, conversation_et);
           notification_content.trigger = trigger;
           notification_content.options.body = _expected_body;
           notification_content.options.data.messageType = _message.type;
@@ -171,7 +176,7 @@ describe('z.notification.NotificationRepository', () => {
             notification_content.title = _expected_title;
           }
 
-          const [firstResultArgs] = TestFactory.notification_repository._showNotification.calls.first().args;
+          const [firstResultArgs] = notificationRepository._showNotification.calls.first().args;
 
           expect(JSON.stringify(firstResultArgs)).toEqual(JSON.stringify(notification_content));
         });
@@ -188,43 +193,44 @@ describe('z.notification.NotificationRepository', () => {
     it('if the browser does not support them', () => {
       z.util.Environment.browser.supports.notifications = false;
 
-      return TestFactory.notification_repository.notify(message_et, undefined, conversation_et).then(() => {
-        expect(TestFactory.notification_repository._showNotification).not.toHaveBeenCalled();
+      return notificationRepository.notify(message_et, undefined, conversation_et).then(() => {
+        expect(notificationRepository._showNotification).not.toHaveBeenCalled();
       });
     });
 
     it('if the browser tab has focus and conversation is active', () => {
-      TestFactory.conversation_repository.active_conversation(conversation_et);
+      const {callingRepository, conversationRepository} = notificationRepository;
+      conversationRepository.active_conversation(conversation_et);
+      callingRepository.joinedCall = () => true;
       document.hasFocus = () => true;
-      TestFactory.calling_repository.joinedCall = () => true;
 
-      return TestFactory.notification_repository
+      return notificationRepository
         .notify(message_et, undefined, conversation_et)
         .then(() => {
-          expect(TestFactory.notification_repository._showNotification).not.toHaveBeenCalled();
+          expect(notificationRepository._showNotification).not.toHaveBeenCalled();
 
           window.wire.app.view.content.multitasking.isMinimized = () => false;
 
-          return TestFactory.notification_repository.notify(message_et, undefined, conversation_et);
+          return notificationRepository.notify(message_et, undefined, conversation_et);
         })
         .then(() => {
-          expect(TestFactory.notification_repository._showNotification).toHaveBeenCalledTimes(1);
+          expect(notificationRepository._showNotification).toHaveBeenCalledTimes(1);
         });
     });
 
     it('if the event was triggered by the user', () => {
       message_et.user().is_me = true;
 
-      return TestFactory.notification_repository.notify(message_et, undefined, conversation_et).then(() => {
-        expect(TestFactory.notification_repository._showNotification).not.toHaveBeenCalled();
+      return notificationRepository.notify(message_et, undefined, conversation_et).then(() => {
+        expect(notificationRepository._showNotification).not.toHaveBeenCalled();
       });
     });
 
     it('if the conversation is muted', () => {
       conversation_et.mutedState(z.conversation.NotificationSetting.STATE.NOTHING);
 
-      return TestFactory.notification_repository.notify(message_et, undefined, conversation_et).then(() => {
-        expect(TestFactory.notification_repository._showNotification).not.toHaveBeenCalled();
+      return notificationRepository.notify(message_et, undefined, conversation_et).then(() => {
+        expect(notificationRepository._showNotification).not.toHaveBeenCalled();
       });
     });
 
@@ -233,24 +239,24 @@ describe('z.notification.NotificationRepository', () => {
       message_et.call_message_type = z.message.CALL_MESSAGE_TYPE.DEACTIVATED;
       message_et.finished_reason = z.calling.enum.TERMINATION_REASON.COMPLETED;
 
-      return TestFactory.notification_repository.notify(message_et, undefined, conversation_et).then(() => {
-        expect(TestFactory.notification_repository._showNotification).not.toHaveBeenCalled();
+      return notificationRepository.notify(message_et, undefined, conversation_et).then(() => {
+        expect(notificationRepository._showNotification).not.toHaveBeenCalled();
       });
     });
 
     it('if preference is set to none', () => {
-      TestFactory.notification_repository.notificationsPreference(z.notification.NotificationPreference.NONE);
+      notificationRepository.notificationsPreference(z.notification.NotificationPreference.NONE);
 
-      return TestFactory.notification_repository.notify(message_et, undefined, conversation_et).then(() => {
-        expect(TestFactory.notification_repository._showNotification).not.toHaveBeenCalled();
+      return notificationRepository.notify(message_et, undefined, conversation_et).then(() => {
+        expect(notificationRepository._showNotification).not.toHaveBeenCalled();
       });
     });
 
     it('if the user permission was denied', () => {
-      TestFactory.notification_repository.permissionState(z.permission.PermissionStatusState.DENIED);
+      notificationRepository.permissionState(z.permission.PermissionStatusState.DENIED);
 
-      return TestFactory.notification_repository.notify(message_et, undefined, conversation_et).then(() => {
-        expect(TestFactory.notification_repository._showNotification).not.toHaveBeenCalled();
+      return notificationRepository.notify(message_et, undefined, conversation_et).then(() => {
+        expect(notificationRepository._showNotification).not.toHaveBeenCalled();
       });
     });
   });
@@ -322,13 +328,13 @@ describe('z.notification.NotificationRepository', () => {
 
       it('when preference is set to obfuscate-message', () => {
         const notification_preference = z.notification.NotificationPreference.OBFUSCATE_MESSAGE;
-        TestFactory.notification_repository.notificationsPreference(notification_preference);
+        notificationRepository.notificationsPreference(notification_preference);
         return verify_notification_obfuscated(conversation_et, message_et, notification_preference);
       });
 
       it('when preference is set to obfuscate', () => {
         const notification_preference = z.notification.NotificationPreference.OBFUSCATE;
-        TestFactory.notification_repository.notificationsPreference(notification_preference);
+        notificationRepository.notificationsPreference(notification_preference);
         return verify_notification_obfuscated(conversation_et, message_et, notification_preference);
       });
     });
@@ -350,13 +356,13 @@ describe('z.notification.NotificationRepository', () => {
 
       it('when preference is set to obfuscate-message', () => {
         const notification_preference = z.notification.NotificationPreference.OBFUSCATE_MESSAGE;
-        TestFactory.notification_repository.notificationsPreference(notification_preference);
+        notificationRepository.notificationsPreference(notification_preference);
         return verify_notification_obfuscated(conversation_et, message_et, notification_preference);
       });
 
       it('when preference is set to obfuscate', () => {
         const notification_preference = z.notification.NotificationPreference.OBFUSCATE;
-        TestFactory.notification_repository.notificationsPreference(notification_preference);
+        notificationRepository.notificationsPreference(notification_preference);
         return verify_notification_obfuscated(conversation_et, message_et, notification_preference);
       });
     });
@@ -378,13 +384,13 @@ describe('z.notification.NotificationRepository', () => {
 
       it('when preference is set to obfuscate-message', () => {
         const notification_preference = z.notification.NotificationPreference.OBFUSCATE_MESSAGE;
-        TestFactory.notification_repository.notificationsPreference(notification_preference);
+        notificationRepository.notificationsPreference(notification_preference);
         return verify_notification_obfuscated(conversation_et, message_et, notification_preference);
       });
 
       it('when preference is set to obfuscate', () => {
         const notification_preference = z.notification.NotificationPreference.OBFUSCATE;
-        TestFactory.notification_repository.notificationsPreference(notification_preference);
+        notificationRepository.notificationsPreference(notification_preference);
         return verify_notification_obfuscated(conversation_et, message_et, notification_preference);
       });
     });
@@ -463,7 +469,9 @@ describe('z.notification.NotificationRepository', () => {
       message_et = new z.entity.MemberMessage();
       message_et.user(user_et);
       message_et.memberMessageType = z.message.SystemMessageType.NORMAL;
-      other_user_et = TestFactory.user_repository.user_mapper.map_user_from_object(payload.users.get.many[1]);
+
+      const userMapper = notificationRepository.userRepository.user_mapper;
+      other_user_et = userMapper.map_user_from_object(payload.users.get.many[1]);
     });
 
     describe('if people are added', () => {
@@ -513,8 +521,8 @@ describe('z.notification.NotificationRepository', () => {
       it('with one user being removed from the conversation', () => {
         message_et.userEntities([other_user_et]);
 
-        return TestFactory.notification_repository.notify(message_et, undefined, conversation_et).then(() => {
-          expect(TestFactory.notification_repository._showNotification).not.toHaveBeenCalled();
+        return notificationRepository.notify(message_et, undefined, conversation_et).then(() => {
+          expect(notificationRepository._showNotification).not.toHaveBeenCalled();
         });
       });
 
@@ -527,19 +535,20 @@ describe('z.notification.NotificationRepository', () => {
       });
 
       it('with multiple users being removed from the conversation', () => {
-        const user_ets = TestFactory.user_repository.user_mapper.map_users_from_object(payload.users.get.many);
-        message_et.userEntities(user_ets);
+        const userMapper = notificationRepository.userRepository.user_mapper;
+        const userEntities = userMapper.map_users_from_object(payload.users.get.many);
+        message_et.userEntities(userEntities);
 
-        return TestFactory.notification_repository.notify(message_et, undefined, conversation_et).then(() => {
-          expect(TestFactory.notification_repository._showNotification).not.toHaveBeenCalled();
+        return notificationRepository.notify(message_et, undefined, conversation_et).then(() => {
+          expect(notificationRepository._showNotification).not.toHaveBeenCalled();
         });
       });
 
       it('with someone leaving the conversation by himself', () => {
         message_et.userEntities([message_et.user()]);
 
-        return TestFactory.notification_repository.notify(message_et, undefined, conversation_et).then(() => {
-          expect(TestFactory.notification_repository._showNotification).not.toHaveBeenCalled();
+        return notificationRepository.notify(message_et, undefined, conversation_et).then(() => {
+          expect(notificationRepository._showNotification).not.toHaveBeenCalled();
         });
       });
     });
@@ -585,7 +594,8 @@ describe('z.notification.NotificationRepository', () => {
     const expected_body = z.string.notificationPing;
 
     beforeAll(() => {
-      user_et = TestFactory.user_repository.user_mapper.map_user_from_object(payload.users.get.one[0]);
+      const userMapper = notificationRepository.userRepository.user_mapper;
+      user_et = userMapper.map_user_from_object(payload.users.get.one[0]);
     });
 
     beforeEach(() => {

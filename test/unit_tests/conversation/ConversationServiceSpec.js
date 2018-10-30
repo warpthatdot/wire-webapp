@@ -22,24 +22,26 @@
 'use strict';
 
 describe('ConversationService', () => {
-  let conversation_mapper = null;
-  let conversation_service = null;
+  let conversationService;
+  let conversationMapper;
+  let storageService;
+
   let server = null;
-  let storage_service = null;
-  const test_factory = new TestFactory();
+
   const eventStoreName = z.storage.StorageSchemata.OBJECT_STORE.EVENTS;
 
   beforeAll(() => {
-    return test_factory.exposeConversationActors().then(storage_repository => {
-      conversation_service = TestFactory.conversation_service;
-      conversation_mapper = new z.conversation.ConversationMapper();
-      storage_service = TestFactory.storage_service;
+    return new TestFactory().exposeConversationActors().then(({repository, service}) => {
+      conversationService = service.conversation;
+      conversationMapper = repository.conversation.conversation_mapper;
+      storageService = service.storage;
+
       server = sinon.fakeServer.create();
     });
   });
 
   afterEach(() => {
-    storage_service.clearStores();
+    storageService.clearStores();
     server.restore();
   });
 
@@ -49,9 +51,9 @@ describe('ConversationService', () => {
       /* eslint-disable comma-spacing, key-spacing, sort-keys, quotes */
       const conversation_payload = {"access":["private"],"creator":"0410795a-58dc-40d8-b216-cbc2360be21a","members":{"self":{"hidden_ref":null,"status":0,"last_read":"24fe.800122000b16c279","muted_time":null,"otr_muted_ref":null,"muted":false,"status_time":"2014-12-03T18:39:12.319Z","hidden":false,"status_ref":"0.0","id":"532af01e-1e24-4366-aacf-33b67d4ee376","otr_archived":false,"cleared":null,"otr_muted":false,"otr_archived_ref":"2016-07-25T11:30:07.883Z","archived":null},"others":[{"status":0,"id":"0410795a-58dc-40d8-b216-cbc2360be21a"}]},"name":"Michael","id":"573b6978-7700-443e-9ce5-ff78b35ac590","type":2,"last_event_time":"2016-06-21T22:53:41.778Z","last_event":"24fe.800122000b16c279"};
       /* eslint-enable comma-spacing, key-spacing, sort-keys, quotes */
-      const [conversation_et] = conversation_mapper.mapConversations([conversation_payload]);
+      const [conversation_et] = conversationMapper.mapConversations([conversation_payload]);
 
-      return conversation_service.save_conversation_state_in_db(conversation_et).then(conversation_record => {
+      return conversationService.save_conversation_state_in_db(conversation_et).then(conversation_record => {
         expect(conversation_record.name()).toBe(conversation_payload.name);
       });
     });
@@ -71,8 +73,8 @@ describe('ConversationService', () => {
     });
 
     it('should find query in text message', () => {
-      return Promise.all(events.slice(0, 1).map(event => storage_service.save(eventStoreName, undefined, event)))
-        .then(() => conversation_service.search_in_conversation(events[0].conversation, 'https://wire.com'))
+      return Promise.all(events.slice(0, 1).map(event => storageService.save(eventStoreName, undefined, event)))
+        .then(() => conversationService.search_in_conversation(events[0].conversation, 'https://wire.com'))
         .then(result => {
           expect(result.length).toBe(1);
           expect(result[0].id).toBe('f7adaa16-38f5-483e-b621-72ff1dbd2275');
@@ -80,8 +82,8 @@ describe('ConversationService', () => {
     });
 
     it('should find query in text message with link preview', () => {
-      return Promise.all(events.map(event => storage_service.save(eventStoreName, undefined, event)))
-        .then(() => conversation_service.search_in_conversation(events[0].conversation, 'https://wire.com'))
+      return Promise.all(events.map(event => storageService.save(eventStoreName, undefined, event)))
+        .then(() => conversationService.search_in_conversation(events[0].conversation, 'https://wire.com'))
         .then(result => {
           expect(result.length).toBe(2);
           expect(result[0].id).toBe('f7adaa16-38f5-483e-b621-72ff1dbd2275');
@@ -109,8 +111,8 @@ describe('ConversationService', () => {
     });
 
     it('should return conversation ids sorted by number of messages', () => {
-      return Promise.all(events.map(event => storage_service.save(eventStoreName, undefined, event)))
-        .then(() => conversation_service.get_active_conversations_from_db())
+      return Promise.all(events.map(event => storageService.save(eventStoreName, undefined, event)))
+        .then(() => conversationService.get_active_conversations_from_db())
         .then(result => {
           expect(result.length).toBe(3);
           expect(result[0]).toBe('34e7f58e-b834-4d84-b628-b89b295d46c1');

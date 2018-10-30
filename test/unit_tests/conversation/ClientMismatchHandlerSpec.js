@@ -22,20 +22,24 @@
 'use strict';
 
 describe('ClientMismatchHandler', () => {
-  const testFactory = new TestFactory();
+  let clientMismatchHandler;
+  let conversationRepository;
 
   let conversationEntity = undefined;
 
   beforeAll(() => z.util.protobuf.loadProtos('ext/proto/@wireapp/protocol-messaging/messages.proto'));
 
   beforeEach(() => {
-    return testFactory.exposeConversationActors().then(conversationRepository => {
+    return new TestFactory().exposeConversationActors().then(({repository}) => {
+      conversationRepository = repository.conversation;
+      clientMismatchHandler = conversationRepository.clientMismatchHandler;
+
       conversationEntity = new z.entity.Conversation(z.util.createRandomUuid());
       return conversationRepository.save_conversation(conversationEntity);
     });
   });
 
-  afterEach(() => TestFactory.conversation_repository.conversations.removeAll());
+  afterEach(() => conversationRepository.conversations.removeAll());
 
   describe('onClientMismatch', () => {
     let clientMismatch = undefined;
@@ -60,7 +64,7 @@ describe('ClientMismatchHandler', () => {
     });
 
     beforeEach(() => {
-      spyOn(TestFactory.user_repository, 'remove_client_from_user').and.returnValue(Promise.resolve());
+      spyOn(conversationRepository.user_repository, 'remove_client_from_user').and.returnValue(Promise.resolve());
 
       payload = {
         recipients: {
@@ -89,49 +93,51 @@ describe('ClientMismatchHandler', () => {
         time: '2016-04-29T10:38:23.002Z',
       };
 
-      spyOn(TestFactory.conversation_repository, 'addMissingMember').and.returnValue(Promise.resolve());
-      spyOn(TestFactory.cryptography_repository, 'encryptGenericMessage').and.returnValue(Promise.resolve(payload));
-      spyOn(TestFactory.user_repository, 'addClientToUser').and.returnValue(Promise.resolve());
+      spyOn(conversationRepository, 'addMissingMember').and.returnValue(Promise.resolve());
+      spyOn(conversationRepository.cryptography_repository, 'encryptGenericMessage').and.returnValue(
+        Promise.resolve(payload)
+      );
+      spyOn(conversationRepository.user_repository, 'addClientToUser').and.returnValue(Promise.resolve());
 
       const timestamp = new Date(clientMismatch.time).getTime();
       const eventInfoEntity = new z.conversation.EventInfoEntity(undefined, conversationId);
       eventInfoEntity.setTimestamp(timestamp);
-      return TestFactory.conversation_repository.clientMismatchHandler
-        .onClientMismatch(eventInfoEntity, clientMismatch, payload)
-        .then(() => {
-          expect(TestFactory.conversation_repository.addMissingMember).toHaveBeenCalledWith(
-            conversationId,
-            [unknownUserId],
-            timestamp - 1
-          );
-        });
+      return clientMismatchHandler.onClientMismatch(eventInfoEntity, clientMismatch, payload).then(() => {
+        expect(conversationRepository.addMissingMember).toHaveBeenCalledWith(
+          conversationId,
+          [unknownUserId],
+          timestamp - 1
+        );
+      });
     });
 
     it('should add missing clients to the payload', () => {
-      spyOn(TestFactory.user_repository, 'addClientToUser').and.returnValue(Promise.resolve());
+      spyOn(conversationRepository.user_repository, 'addClientToUser').and.returnValue(Promise.resolve());
       // TODO: Make this fake method available as a utility function for testing
-      spyOn(TestFactory.cryptography_repository.cryptographyService, 'getUsersPreKeys').and.callFake(recipients => {
-        return Promise.resolve().then(() => {
-          const preKeyMap = {};
+      spyOn(conversationRepository.cryptography_repository.cryptographyService, 'getUsersPreKeys').and.callFake(
+        recipients => {
+          return Promise.resolve().then(() => {
+            const preKeyMap = {};
 
-          for (const userId in recipients) {
-            if (recipients.hasOwnProperty(userId)) {
-              const clientIds = recipients[userId];
-              preKeyMap[userId] = preKeyMap[userId] || {};
+            for (const userId in recipients) {
+              if (recipients.hasOwnProperty(userId)) {
+                const clientIds = recipients[userId];
+                preKeyMap[userId] = preKeyMap[userId] || {};
 
-              clientIds.forEach(clientId => {
-                preKeyMap[userId][clientId] = {
-                  id: 65535,
-                  key:
-                    'pQABARn//wKhAFgg3OpuTCUwDZMt1fklZB4M+fjDx/3fyx78gJ6j3H3dM2YDoQChAFggQU1orulueQHLv5YDYqEYl3D4O0zA9d+TaGGXXaBJmK0E9g==',
-                };
-              });
+                clientIds.forEach(clientId => {
+                  preKeyMap[userId][clientId] = {
+                    id: 65535,
+                    key:
+                      'pQABARn//wKhAFgg3OpuTCUwDZMt1fklZB4M+fjDx/3fyx78gJ6j3H3dM2YDoQChAFggQU1orulueQHLv5YDYqEYl3D4O0zA9d+TaGGXXaBJmK0E9g==',
+                  };
+                });
+              }
             }
-          }
 
-          return preKeyMap;
-        });
-      });
+            return preKeyMap;
+          });
+        }
+      );
 
       clientMismatch = {
         deleted: {},
@@ -142,18 +148,18 @@ describe('ClientMismatchHandler', () => {
         time: '2016-04-29T10:38:23.002Z',
       };
 
-      TestFactory.cryptography_repository.createCryptobox.and.callThrough();
-
-      return TestFactory.cryptography_repository.createCryptobox(TestFactory.storage_service.db).then(() => {
-        const eventInfoEntity = new z.conversation.EventInfoEntity(genericMessage, conversationEntity.id);
-        eventInfoEntity.setTimestamp(new Date(clientMismatch.time).getTime());
-        return TestFactory.conversation_repository.clientMismatchHandler
-          .onClientMismatch(eventInfoEntity, clientMismatch, payload)
-          .then(updatedPayload => {
-            expect(Object.keys(updatedPayload.recipients).length).toBe(2);
-            expect(Object.keys(updatedPayload.recipients[johnDoe.user_id]).length).toBe(1);
-          });
-      });
+      return conversationRepository.cryptography_repository
+        .createCryptobox(conversationRepository.storage_service.db)
+        .then(() => {
+          const eventInfoEntity = new z.conversation.EventInfoEntity(genericMessage, conversationEntity.id);
+          eventInfoEntity.setTimestamp(new Date(clientMismatch.time).getTime());
+          return clientMismatchHandler
+            .onClientMismatch(eventInfoEntity, clientMismatch, payload)
+            .then(updatedPayload => {
+              expect(Object.keys(updatedPayload.recipients).length).toBe(2);
+              expect(Object.keys(updatedPayload.recipients[johnDoe.user_id]).length).toBe(1);
+            });
+        });
     });
 
     it('should remove the payload of deleted clients', () => {
@@ -167,12 +173,10 @@ describe('ClientMismatchHandler', () => {
       };
 
       const eventInfoEntity = new z.conversation.EventInfoEntity(genericMessage, conversationEntity.id);
-      return TestFactory.conversation_repository.clientMismatchHandler
-        .onClientMismatch(eventInfoEntity, clientMismatch, payload)
-        .then(updatedPayload => {
-          expect(TestFactory.user_repository.remove_client_from_user).toHaveBeenCalled();
-          expect(Object.keys(updatedPayload.recipients).length).toBe(0);
-        });
+      return clientMismatchHandler.onClientMismatch(eventInfoEntity, clientMismatch, payload).then(updatedPayload => {
+        expect(conversationRepository.user_repository.remove_client_from_user).toHaveBeenCalled();
+        expect(Object.keys(updatedPayload.recipients).length).toBe(0);
+      });
     });
 
     it('should remove the payload of redundant clients', () => {
@@ -186,12 +190,10 @@ describe('ClientMismatchHandler', () => {
       };
 
       const eventInfoEntity = new z.conversation.EventInfoEntity(genericMessage, conversationEntity.id);
-      return TestFactory.conversation_repository.clientMismatchHandler
-        .onClientMismatch(eventInfoEntity, clientMismatch, payload)
-        .then(updated_payload => {
-          expect(TestFactory.user_repository.remove_client_from_user).not.toHaveBeenCalled();
-          expect(Object.keys(updated_payload.recipients).length).toBe(0);
-        });
+      return clientMismatchHandler.onClientMismatch(eventInfoEntity, clientMismatch, payload).then(updated_payload => {
+        expect(conversationRepository.user_repository.remove_client_from_user).not.toHaveBeenCalled();
+        expect(Object.keys(updated_payload.recipients).length).toBe(0);
+      });
     });
   });
 });
