@@ -24,7 +24,7 @@ export default class MessageDetailsViewModel extends BasePanelViewModel {
   constructor(params) {
     super(params);
 
-    params.repositories.event.eventService.addEventUpdatedListener((updatedEvent, oldEvent) => {
+    params.repositories.event.eventService.addEventUpdatedListener(({obj: updatedEvent, oldObj: oldEvent}) => {
       // listen for any changes in the DB to the event being viewed.
       // if the event's id has changed, we replace the local event id with the new one
       if (oldEvent.id === this.messageId()) {
