@@ -2444,7 +2444,7 @@ z.conversation.ConversationRepository = class ConversationRepository {
     const messageType = eventInfoEntity.getType();
     this.logger.info(`Sending external message of type '${messageType}'`, genericMessage);
 
-    return z.assets.AssetCrypto.encryptAesAsset(genericMessage.encode().finish())
+    return z.assets.AssetCrypto.encryptAesAsset(GenericMessage.encode(genericMessage).finish())
       .then(({cipherText, keyBytes, sha256}) => {
         const genericMessageExternal = new GenericMessage({messageId: z.util.createRandomUuid()});
         const externalMessage = new External({otrKey: new Uint8Array(keyBytes), sha256: new Uint8Array(sha256)});
@@ -2676,7 +2676,7 @@ z.conversation.ConversationRepository = class ConversationRepository {
     const {conversationId, genericMessage} = eventInfoEntity;
 
     return this.get_conversation_by_id(conversationId).then(conversationEntity => {
-      const messageInBytes = new Uint8Array(genericMessage.encode().finish()).length;
+      const messageInBytes = new Uint8Array(GenericMessage.encode(genericMessage).finish()).length;
       const estimatedPayloadInBytes = conversationEntity.getNumberOfClients() * messageInBytes;
 
       return estimatedPayloadInBytes > ConversationRepository.CONFIG.EXTERNAL_MESSAGE_THRESHOLD;

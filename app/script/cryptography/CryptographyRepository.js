@@ -447,7 +447,7 @@ z.cryptography.CryptographyRepository = class CryptographyRepository {
    */
   _encryptPayloadForSession(sessionId, genericMessage, preKeyBundle) {
     return this.cryptobox
-      .encrypt(sessionId, genericMessage.encode().finish(), preKeyBundle)
+      .encrypt(sessionId, GenericMessage.encode(genericMessage).finish(), preKeyBundle)
       .then(cipherText => ({cipherText: z.util.arrayToBase64(cipherText), sessionId}))
       .catch(error => {
         if (error instanceof StoreEngine.error.RecordNotFoundError) {

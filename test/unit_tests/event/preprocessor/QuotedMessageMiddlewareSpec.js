@@ -26,15 +26,12 @@ describe('z.event.preprocessor.QuotedMessageMiddleware', () => {
   let quotedMessageMiddleware;
 
   beforeEach(() => {
-    return z.util.protobuf
-      .loadProtos('ext/js/@wireapp/protocol-messaging/proto/messages.proto')
-      .then(() => testFactory.exposeEventActors())
-      .then(() => {
-        quotedMessageMiddleware = new z.event.preprocessor.QuotedMessageMiddleware(
-          TestFactory.event_service,
-          z.message.MessageHasher
-        );
-      });
+    return testFactory.exposeEventActors().then(() => {
+      quotedMessageMiddleware = new z.event.preprocessor.QuotedMessageMiddleware(
+        TestFactory.event_service,
+        z.message.MessageHasher
+      );
+    });
   });
 
   describe('processEvent', () => {

@@ -17,6 +17,8 @@
  *
  */
 
+import {GenericMessage} from '@wireapp/protocol-messaging';
+
 window.z = window.z || {};
 window.z.broadcast = z.broadcast || {};
 
@@ -129,7 +131,7 @@ z.broadcast.BroadcastRepository = class BroadcastRepository {
    * @returns {boolean} Is payload likely to be too big so that we switch to type external?
    */
   _shouldSendAsExternal(genericMessage) {
-    const messageInBytes = new Uint8Array(genericMessage.encode().finish());
+    const messageInBytes = new Uint8Array(GenericMessage.encode(genericMessage).finish());
     const estimatedPayloadInBytes = this._getNumberOfClients() * messageInBytes;
 
     return estimatedPayloadInBytes > z.conversation.ConversationRepository.CONFIG.EXTERNAL_MESSAGE_THRESHOLD;

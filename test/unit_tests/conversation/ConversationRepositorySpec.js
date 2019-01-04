@@ -56,8 +56,6 @@ describe('ConversationRepository', () => {
     return conversation;
   };
 
-  beforeAll(() => z.util.protobuf.loadProtos('ext/js/@wireapp/protocol-messaging/proto/messages.proto'));
-
   beforeEach(() => {
     server = sinon.fakeServer.create();
     server.autoRespond = true;

@@ -39,7 +39,11 @@ async function createEncodedCiphertext(
   const sessionId = `from-${sender.identity.public_key.fingerprint()}-to-${preKey.key_pair.public_key.fingerprint()}`;
   const preKeyBundle = Proteus.keys.PreKeyBundle.new(receivingIdentity.public_key, preKey);
 
-  const cipherText = await sender.encrypt(sessionId, genericMessage.encode().finish(), preKeyBundle.serialise());
+  const cipherText = await sender.encrypt(
+    sessionId,
+    GenericMessage.encode(genericMessage).finish(),
+    preKeyBundle.serialise()
+  );
 
   return z.util.arrayToBase64(cipherText);
 }
@@ -62,11 +66,7 @@ describe('Event Repository', () => {
     };
   })();
 
-  beforeAll(() => {
-    return z.util.protobuf
-      .loadProtos('ext/js/@wireapp/protocol-messaging/proto/messages.proto')
-      .then(() => test_factory.exposeClientActors());
-  });
+  beforeAll(() => test_factory.exposeClientActors());
 
   beforeEach(() => {
     return test_factory.exposeEventActors().then(event_repository => {

@@ -29,8 +29,6 @@ describe('LinkPreviewProtoBuilder', () => {
     expect(() => preview.encode().finish()).not.toThrow();
   };
 
-  beforeAll(() => z.util.protobuf.loadProtos('ext/js/@wireapp/protocol-messaging/proto/messages.proto'));
-
   it('returns undefined if no data is given', () => {
     const link_preview = z.links.LinkPreviewProtoBuilder.buildFromOpenGraphData();
 

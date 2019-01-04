@@ -24,8 +24,6 @@ describe('ClientMismatchHandler', () => {
 
   let conversationEntity = undefined;
 
-  beforeAll(() => z.util.protobuf.loadProtos('ext/js/@wireapp/protocol-messaging/proto/messages.proto'));
-
   beforeEach(() => {
     return testFactory.exposeConversationActors().then(conversationRepository => {
       conversationEntity = new z.entity.Conversation(z.util.createRandomUuid());

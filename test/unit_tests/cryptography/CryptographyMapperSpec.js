@@ -51,8 +51,6 @@ describe('CryptographyMapper', () => {
   });
 
   describe('"mapGenericMessage"', () => {
-    beforeAll(() => z.util.protobuf.loadProtos('ext/js/@wireapp/protocol-messaging/proto/messages.proto'));
-
     it('resolves with a mapped original asset message', () => {
       const original = {
         mime_type: 'jpg',

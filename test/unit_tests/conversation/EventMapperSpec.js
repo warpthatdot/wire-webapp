@@ -27,16 +27,13 @@ describe('Event Mapper', () => {
   let event_mapper = null;
 
   beforeAll(() => {
-    return z.util.protobuf
-      .loadProtos('ext/js/@wireapp/protocol-messaging/proto/messages.proto')
-      .then(() => test_factory.exposeUserActors())
-      .then(() => {
-        wire.app = {
-          service: {
-            asset: TestFactory.asset_service,
-          },
-        };
-      });
+    return test_factory.exposeUserActors().then(() => {
+      wire.app = {
+        service: {
+          asset: TestFactory.asset_service,
+        },
+      };
+    });
   });
 
   beforeEach(() => {

@@ -26,9 +26,7 @@ describe('z.cryptography.CryptographyRepository', () => {
   const test_factory = new TestFactory();
 
   beforeAll(() => {
-    return z.util.protobuf
-      .loadProtos('ext/js/@wireapp/protocol-messaging/proto/messages.proto')
-      .then(() => test_factory.exposeCryptographyActors(false));
+    return test_factory.exposeCryptographyActors(false);
   });
 
   describe('encryptGenericMessage', () => {
@@ -121,7 +119,7 @@ describe('z.cryptography.CryptographyRepository', () => {
 
       const cipherText = await bob.encrypt(
         'session-with-alice',
-        genericMessage.encode().finish(),
+        GenericMessage.encode(genericMessage).finish(),
         aliceBundle.serialise()
       );
       const encodedCipherText = z.util.arrayToBase64(cipherText);
