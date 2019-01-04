@@ -17,6 +17,8 @@
  *
  */
 
+import {Availability, GenericMessage} from '@wireapp/protocol-messaging';
+
 import {UNSPLASH_URL} from '../externalRoute';
 
 window.z = window.z || {};
@@ -319,9 +321,9 @@ z.user.UserRepository = class UserRepository {
       this.logger.log(`Availability was again set to '${newAvailabilityValue}'`);
     }
 
-    const genericMessage = new z.proto.GenericMessage(z.util.createRandomUuid());
-    const protoAvailability = new z.proto.Availability(z.user.AvailabilityMapper.protoFromType(availability));
-    genericMessage.set(z.cryptography.GENERIC_MESSAGE_TYPE.AVAILABILITY, protoAvailability);
+    const genericMessage = new GenericMessage({messageId: z.util.createRandomUuid()});
+    const protoAvailability = new Availability({type: z.user.AvailabilityMapper.protoFromType(availability)});
+    genericMessage[z.cryptography.GENERIC_MESSAGE_TYPE.AVAILABILITY] = protoAvailability;
 
     amplify.publish(z.event.WebApp.BROADCAST.SEND_MESSAGE, genericMessage);
   }

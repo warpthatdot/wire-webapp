@@ -17,6 +17,8 @@
  *
  */
 
+import {Quote} from '@wireapp/protocol-messaging';
+
 window.z = window.z || {};
 window.z.event = z.event || {};
 window.z.event.preprocessor = z.event.preprocessor || {};
@@ -98,7 +100,7 @@ z.event.preprocessor.QuotedMessageMiddleware = class QuotedMessageMiddleware {
       return Promise.resolve(event);
     }
 
-    const quote = z.proto.Quote.decode64(rawQuote);
+    const quote = Quote.decode64(rawQuote);
     this.logger.info('Found quoted message', quote);
 
     return this.eventService.loadEvent(event.conversation, quote.quoted_message_id).then(quotedMessage => {

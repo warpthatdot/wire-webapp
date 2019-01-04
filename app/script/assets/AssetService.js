@@ -17,6 +17,8 @@
  *
  */
 
+import {Asset} from '@wireapp/protocol-messaging';
+
 window.z = window.z || {};
 window.z.assets = z.assets || {};
 
@@ -73,7 +75,7 @@ z.assets.AssetService = class AssetService {
   }
 
   /**
-   * Upload file using the new asset api v3. Promise will resolve with z.proto.Asset instance.
+   * Upload file using the new asset api v3. Promise will resolve with Asset instance.
    * In case of an successful upload the uploaded property is set.
    *
    * @param {Blob|File} file - File asset to be uploaded
@@ -89,21 +91,19 @@ z.assets.AssetService = class AssetService {
       .loadFileBuffer(file)
       .then(buffer => this._uploadAsset(buffer, options, xhrAccessorFunction))
       .then(({key, keyBytes, sha256, token}) => {
-        const protoAsset = new z.proto.Asset();
-        const assetRemoteData = new z.proto.Asset.RemoteData(keyBytes, sha256, key, token);
+        const protoAsset = new Asset();
+        const assetRemoteData = new Asset.RemoteData({assetId: key, assetToken: token, otrKey: keyBytes, sha256});
 
-        protoAsset.set(z.cryptography.PROTO_MESSAGE_TYPE.ASSET_UPLOADED, assetRemoteData);
-        protoAsset.set(
-          z.cryptography.PROTO_MESSAGE_TYPE.EXPECTS_READ_CONFIRMATION,
-          options.expectsReadConfirmation || false
-        );
+        protoAsset[z.cryptography.PROTO_MESSAGE_TYPE.ASSET_UPLOADED] = assetRemoteData;
+        protoAsset[z.cryptography.PROTO_MESSAGE_TYPE.EXPECTS_READ_CONFIRMATION] =
+          options.expectsReadConfirmation || false;
 
         return protoAsset;
       });
   }
 
   /**
-   * Upload image using the new asset api v3. Promise will resolve with z.proto.Asset instance.
+   * Upload image using the new asset api v3. Promise will resolve with Asset instance.
    * In case of an successful upload the uploaded property is set.
    *
    * @param {Blob|File} image - Image asset to be uploaded
@@ -116,18 +116,23 @@ z.assets.AssetService = class AssetService {
   uploadImageAsset(image, options) {
     return this._compressImage(image).then(({compressedBytes, compressedImage}) => {
       return this._uploadAsset(compressedBytes, options).then(({key, keyBytes, sha256, token}) => {
-        const protoAsset = new z.proto.Asset();
+        const protoAsset = new Asset();
 
-        const assetImageMetadata = new z.proto.Asset.ImageMetaData(compressedImage.width, compressedImage.height);
-        const assetOriginal = new z.proto.Asset.Original(image.type, compressedBytes.length, null, assetImageMetadata);
-        const assetRemoteData = new z.proto.Asset.RemoteData(keyBytes, sha256, key, token);
+        const assetImageMetadata = new Asset.ImageMetaData({
+          height: compressedImage.height,
+          width: compressedImage.width,
+        });
+        const assetOriginal = new Asset.Original({
+          image: assetImageMetadata,
+          mimeType: image.type,
+          size: compressedBytes.length,
+        });
+        const assetRemoteData = new Asset.RemoteData({assetId: key, assetToken: token, otrKey: keyBytes, sha256});
 
-        protoAsset.set(z.cryptography.PROTO_MESSAGE_TYPE.ASSET_ORIGINAL, assetOriginal);
-        protoAsset.set(z.cryptography.PROTO_MESSAGE_TYPE.ASSET_UPLOADED, assetRemoteData);
-        protoAsset.set(
-          z.cryptography.PROTO_MESSAGE_TYPE.EXPECTS_READ_CONFIRMATION,
-          options.expectsReadConfirmation || false
-        );
+        protoAsset[z.cryptography.PROTO_MESSAGE_TYPE.ASSET_ORIGINAL] = assetOriginal;
+        protoAsset[z.cryptography.PROTO_MESSAGE_TYPE.ASSET_UPLOADED] = assetRemoteData;
+        protoAsset[z.cryptography.PROTO_MESSAGE_TYPE.EXPECTS_READ_CONFIRMATION] =
+          options.expectsReadConfirmation || false;
 
         return protoAsset;
       });

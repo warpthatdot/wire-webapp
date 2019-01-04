@@ -17,6 +17,8 @@
  *
  */
 
+import {GenericMessage, Text} from '@wireapp/protocol-messaging';
+
 describe('ClientMismatchHandler', () => {
   const testFactory = new TestFactory();
 
@@ -42,8 +44,8 @@ describe('ClientMismatchHandler', () => {
     let janeRoe = undefined;
 
     beforeAll(() => {
-      genericMessage = new z.proto.GenericMessage(z.util.createRandomUuid());
-      genericMessage.set(z.cryptography.GENERIC_MESSAGE_TYPE.TEXT, new z.proto.Text('Test'));
+      genericMessage = new GenericMessage({messageId: z.util.createRandomUuid()});
+      genericMessage[z.cryptography.GENERIC_MESSAGE_TYPE.TEXT] = new Text({content: 'Test'});
 
       johnDoe = {
         client_id: 'd13a2ec9b6436122',

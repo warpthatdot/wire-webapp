@@ -17,6 +17,8 @@
  *
  */
 
+import {Article, LinkPreview, Tweet} from '@wireapp/protocol-messaging';
+
 window.z = window.z || {};
 window.z.links = z.links || {};
 
@@ -29,25 +31,32 @@ z.links.LinkPreviewProtoBuilder = {
    * @param {string} url - Link entered by the user
    * @param {number} offset - Starting index of the link
    *
-   * @returns {z.proto.LinkPreview} Link preview proto
+   * @returns {LinkPreview} Link preview proto
    */
   buildFromOpenGraphData(data, url, offset = 0) {
     if (!_.isEmpty(data)) {
       data.url = data.url || url;
 
       if (data.title && data.url) {
-        const protoArticle = new z.proto.Article(data.url, data.title, data.description); // deprecated format
+        const protoArticle = new Article(data.url, data.title, data.description); // deprecated format
 
         const {description, title, url: dataUrl} = data;
-        const protoLinkPreview = new z.proto.LinkPreview(url, offset, protoArticle, dataUrl, title, description);
+        const protoLinkPreview = new LinkPreview({
+          article: protoArticle,
+          permanentUrl: dataUrl,
+          summary: description,
+          title,
+          url,
+          urlOffset: offset,
+        });
 
         if (data.site_name === 'Twitter' && z.util.ValidationUtil.urls.isTweet(data.url)) {
           const author = data.title.replace('on Twitter', '').trim();
           const username = data.url.match(/com\/([^/]*)\//)[1];
-          const protoTweet = new z.proto.Tweet(author, username);
+          const protoTweet = new Tweet({author, username});
 
-          protoLinkPreview.set(z.cryptography.PROTO_MESSAGE_TYPE.TWEET, protoTweet);
-          protoLinkPreview.set(z.cryptography.PROTO_MESSAGE_TYPE.LINK_PREVIEW_TITLE, data.description);
+          protoLinkPreview[z.cryptography.PROTO_MESSAGE_TYPE.TWEET] = protoTweet;
+          protoLinkPreview[z.cryptography.PROTO_MESSAGE_TYPE.LINK_PREVIEW_TITLE] = data.description;
         }
 
         return protoLinkPreview;

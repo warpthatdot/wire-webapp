@@ -17,6 +17,8 @@
  *
  */
 
+import {Article, LinkPreview} from '@wireapp/protocol-messaging';
+
 import EventMapper from 'app/script/conversation/EventMapper';
 
 describe('Event Mapper', () => {
@@ -67,8 +69,8 @@ describe('Event Mapper', () => {
     it('maps text messages with deprecated link preview format', () => {
       const event_id = z.util.createRandomUuid;
 
-      const article = new z.proto.Article('test.com', 'Test title', 'Test description');
-      const link_preview = new z.proto.LinkPreview('test.com', 0, article);
+      const article = new Article('test.com', 'Test title', 'Test description');
+      const link_preview = new LinkPreview('test.com', 0, article);
 
       const event = {
         conversation: conversation_et.id,
@@ -94,14 +96,7 @@ describe('Event Mapper', () => {
     it('maps text messages with link preview', () => {
       const event_id = z.util.createRandomUuid;
 
-      const link_preview = new z.proto.LinkPreview(
-        'test.com',
-        0,
-        null,
-        'test.com/perm',
-        'Test title',
-        'Test description'
-      );
+      const link_preview = new LinkPreview('test.com', 0, null, 'test.com/perm', 'Test title', 'Test description');
 
       const event = {
         conversation: conversation_et.id,

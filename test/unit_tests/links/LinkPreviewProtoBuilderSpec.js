@@ -24,9 +24,9 @@ describe('LinkPreviewProtoBuilder', () => {
     expect(preview.url).toBe(url);
     expect(preview.url_offset).toBe(offset);
     expect(preview.article.title).toBe(mock.title);
-    expect(preview.article.permanent_url).toBe(mock.url);
+    expect(preview.article.permanentUrl).toBe(mock.url);
     expect(preview.article.summary).toEqual(mock.description || null);
-    expect(() => preview.toArrayBuffer()).not.toThrow();
+    expect(() => preview.encode().finish()).not.toThrow();
   };
 
   beforeAll(() => z.util.protobuf.loadProtos('ext/js/@wireapp/protocol-messaging/proto/messages.proto'));

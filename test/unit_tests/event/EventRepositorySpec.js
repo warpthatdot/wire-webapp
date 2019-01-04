@@ -17,10 +17,10 @@
  *
  */
 
-'use strict';
 import {MemoryEngine} from '@wireapp/store-engine';
 import {Cryptobox} from '@wireapp/cryptobox';
 import * as Proteus from '@wireapp/proteus';
+import {GenericMessage, Text} from '@wireapp/protocol-messaging';
 
 async function createEncodedCiphertext(
   preKey,
@@ -33,13 +33,13 @@ async function createEncodedCiphertext(
   const sender = new Cryptobox(bobEngine, 1);
   await sender.create();
 
-  const genericMessage = new z.proto.GenericMessage(z.util.createRandomUuid());
-  genericMessage.set(z.cryptography.GENERIC_MESSAGE_TYPE.TEXT, new z.proto.Text(text));
+  const genericMessage = new GenericMessage({messageId: z.util.createRandomUuid()});
+  genericMessage[z.cryptography.GENERIC_MESSAGE_TYPE.TEXT] = new Text({content: text});
 
   const sessionId = `from-${sender.identity.public_key.fingerprint()}-to-${preKey.key_pair.public_key.fingerprint()}`;
   const preKeyBundle = Proteus.keys.PreKeyBundle.new(receivingIdentity.public_key, preKey);
 
-  const cipherText = await sender.encrypt(sessionId, genericMessage.toArrayBuffer(), preKeyBundle.serialise());
+  const cipherText = await sender.encrypt(sessionId, genericMessage.encode().finish(), preKeyBundle.serialise());
 
   return z.util.arrayToBase64(cipherText);
 }

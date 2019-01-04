@@ -17,6 +17,8 @@
  *
  */
 
+import {Availability, Confirmation, GenericMessage} from '@wireapp/protocol-messaging';
+
 export default class CryptographyMapper {
   static get CONFIG() {
     return {
@@ -32,7 +34,7 @@ export default class CryptographyMapper {
   /**
    * Maps a generic message into an event in JSON.
    *
-   * @param {z.proto.GenericMessage} genericMessage - Received ProtoBuffer message
+   * @param {GenericMessage} genericMessage - Received ProtoBuffer message
    * @param {JSON} event - Event of z.event.Backend.CONVERSATION.OTR-ASSET-ADD or z.event.Backend.CONVERSATION.OTR-MESSAGE-ADD
    * @returns {Promise} Resolves with the mapped event
    */
@@ -223,13 +225,13 @@ export default class CryptographyMapper {
       data: {
         availability: (() => {
           switch (availability.type) {
-            case z.proto.Availability.Type.NONE:
+            case Availability.Type.NONE:
               return z.user.AvailabilityType.NONE;
-            case z.proto.Availability.Type.AVAILABLE:
+            case Availability.Type.AVAILABLE:
               return z.user.AvailabilityType.AVAILABLE;
-            case z.proto.Availability.Type.AWAY:
+            case Availability.Type.AWAY:
               return z.user.AvailabilityType.AWAY;
-            case z.proto.Availability.Type.BUSY:
+            case Availability.Type.BUSY:
               return z.user.AvailabilityType.BUSY;
             default:
               const message = 'Unhandled availability type';
@@ -266,9 +268,9 @@ export default class CryptographyMapper {
         more_message_ids: confirmation.more_message_ids || [],
         status: (() => {
           switch (confirmation.type) {
-            case z.proto.Confirmation.Type.DELIVERED:
+            case Confirmation.Type.DELIVERED:
               return z.message.StatusType.DELIVERED;
-            case z.proto.Confirmation.Type.READ:
+            case Confirmation.Type.READ:
               return z.message.StatusType.SEEN;
             default:
               const message = 'Unhandled confirmation type';
@@ -296,7 +298,7 @@ export default class CryptographyMapper {
   }
 
   _mapEphemeral(genericMessage, event) {
-    const messageTimer = genericMessage.ephemeral.expire_after_millis.toNumber();
+    const messageTimer = genericMessage.ephemeral.expireAfterMillis.toNumber();
     genericMessage.ephemeral.message_id = genericMessage.message_id;
 
     const embeddedMessage = this._mapGenericMessage(genericMessage.ephemeral, event);
@@ -309,7 +311,7 @@ export default class CryptographyMapper {
    * Unpacks a specific generic message which is wrapped inside an external generic message.
    *
    * @note Wrapped messages get the 'message_id' of their wrappers (external message)
-   * @param {z.proto.External} external - Generic message of type 'external'
+   * @param {External} external - Generic message of type 'external'
    * @param {JSON} event - Backend event of type 'conversation.otr-message-add'
    * @returns {Promise} Resolves with generic message
    */
@@ -327,7 +329,7 @@ export default class CryptographyMapper {
 
         return z.assets.AssetCrypto.decryptAesAsset(cipherText, keyBytes, referenceSha256);
       })
-      .then(externalMessageBuffer => z.proto.GenericMessage.decode(externalMessageBuffer))
+      .then(externalMessageBuffer => GenericMessage.decode(externalMessageBuffer))
       .catch(error => {
         this.logger.error(`Failed to unwrap external message: ${error.message}`, error);
         throw new z.error.CryptographyError(z.error.CryptographyError.TYPE.BROKEN_EXTERNAL);

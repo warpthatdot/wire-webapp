@@ -17,6 +17,8 @@
  *
  */
 
+import {Quote} from '@wireapp/protocol-messaging';
+
 // KARMA_SPECS=event/preprocessor/QuotedMessageMiddleware yarn test:app
 
 describe('z.event.preprocessor.QuotedMessageMiddleware', () => {
@@ -61,9 +63,9 @@ describe('z.event.preprocessor.QuotedMessageMiddleware', () => {
         conversation: 'c3dfbc39-4e61-42e3-ab31-62800a0faeeb',
         data: {
           content: 'salut',
-          quote: new z.proto.Quote({
-            quoted_message_id: 'invalid-message-uuid',
-            quoted_message_sha256: '',
+          quote: new Quote({
+            quotedMessageId: 'invalid-message-uuid',
+            quotedMessageSha256: '',
           }).encode64(),
         },
         type: z.event.Client.CONVERSATION.MESSAGE_ADD,
@@ -94,9 +96,9 @@ describe('z.event.preprocessor.QuotedMessageMiddleware', () => {
         conversation: 'conversation-uuid',
         data: {
           content: 'salut',
-          quote: new z.proto.Quote({
-            quoted_message_id: 'message-uuid',
-            quoted_message_sha256: '7fec6710751f67587b6f6109782257cd7c56b5d29570824132e8543e18242f1b',
+          quote: new Quote({
+            quotedMessageId: 'message-uuid',
+            quotedMessageSha256: '7fec6710751f67587b6f6109782257cd7c56b5d29570824132e8543e18242f1b',
           }).encode64(),
         },
         time: 100,
@@ -125,9 +127,9 @@ describe('z.event.preprocessor.QuotedMessageMiddleware', () => {
         conversation: 'conversation-uuid',
         data: {
           content: 'salut',
-          quote: new z.proto.Quote({
-            quoted_message_id: 'message-uuid',
-            quoted_message_sha256: '7fec6710751f67587b6f6109782257cd7c56b5d29570824132e8543e18242f1b',
+          quote: new Quote({
+            quotedMessageId: 'message-uuid',
+            quotedMessageSha256: '7fec6710751f67587b6f6109782257cd7c56b5d29570824132e8543e18242f1b',
           }).encode64(),
         },
         time: 100,

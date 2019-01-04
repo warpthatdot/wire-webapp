@@ -18,6 +18,7 @@
  */
 
 import adapter from 'webrtc-adapter';
+import {Calling, GenericMessage} from '@wireapp/protocol-messaging';
 
 window.z = window.z || {};
 window.z.calling = z.calling || {};
@@ -725,9 +726,9 @@ z.calling.CallingRepository = class CallingRepository {
 
           this._logMessage(true, callMessageEntity);
 
-          const genericMessage = new z.proto.GenericMessage(z.util.createRandomUuid());
-          const protoCalling = new z.proto.Calling(callMessageEntity.toContentString());
-          genericMessage.set(z.cryptography.GENERIC_MESSAGE_TYPE.CALLING, protoCalling);
+          const genericMessage = new GenericMessage({messageId: z.util.createRandomUuid()});
+          const protoCalling = new Calling({content: callMessageEntity.toContentString()});
+          genericMessage[z.cryptography.GENERIC_MESSAGE_TYPE.CALLING] = protoCalling;
 
           const options = {precondition, recipients};
           const eventInfoEntity = new z.conversation.EventInfoEntity(genericMessage, conversationEntity.id, options);

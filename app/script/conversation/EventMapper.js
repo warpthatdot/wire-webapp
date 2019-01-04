@@ -17,6 +17,8 @@
  *
  */
 
+import {LinkPreview, Mention} from '@wireapp/protocol-messaging';
+
 import ReceiptModeUpdateMessage from '../entity/message/ReceiptModeUpdateMessage';
 
 // Event Mapper to convert all server side JSON events into core entities.
@@ -660,7 +662,7 @@ export default class EventMapper {
    * Map link preview from proto message.
    *
    * @private
-   * @param {z.proto.LinkPreview} linkPreview - Link preview proto message
+   * @param {LinkPreview} linkPreview - Link preview proto message
    * @returns {LinkPreview} Mapped link preview
    */
   _mapAssetLinkPreview(linkPreview) {
@@ -674,10 +676,10 @@ export default class EventMapper {
 
       const previewImage = image || article_image;
       if (previewImage && previewImage.uploaded) {
-        const {asset_token, asset_id: asset_key} = previewImage.uploaded;
+        const {assetToken: asset_token, assetId: asset_key} = previewImage.uploaded;
 
         if (asset_key) {
-          let {otr_key, sha256} = previewImage.uploaded;
+          let {otrKey: otr_key, sha256} = previewImage.uploaded;
 
           otr_key = new Uint8Array(otr_key.toArrayBuffer());
           sha256 = new Uint8Array(sha256.toArrayBuffer());
@@ -699,7 +701,7 @@ export default class EventMapper {
    */
   _mapAssetLinkPreviews(linkPreviews) {
     return linkPreviews
-      .map(encodedLinkPreview => z.proto.LinkPreview.decode64(encodedLinkPreview))
+      .map(encodedLinkPreview => LinkPreview.decode64(encodedLinkPreview))
       .map(linkPreview => this._mapAssetLinkPreview(linkPreview))
       .filter(linkPreviewEntity => linkPreviewEntity);
   }
@@ -715,7 +717,7 @@ export default class EventMapper {
   _mapAssetMentions(mentions, messageText) {
     return mentions
       .map(encodedMention => {
-        const protoMention = z.proto.Mention.decode64(encodedMention);
+        const protoMention = Mention.decode64(encodedMention);
         return new z.message.MentionEntity(protoMention.start, protoMention.length, protoMention.user_id);
       })
       .filter(mentionEntity => {
